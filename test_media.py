@@ -1,15 +1,16 @@
 import copy
 import unittest
+import xml.etree.ElementTree as ET
 from datetime import datetime,timedelta,timezone
 from unittest.mock import Mock
-from media import extract_image,enrich_media,valid_image,MEDIA_SPECS
+from media import extract_image,enrich_media,valid_image,feed_image,MEDIA_SPECS,MAX_LOOKUPS
 
 NOW=datetime(2026,11,8,20,tzinfo=timezone.utc)
 def stamp(now):return now.isoformat().replace('+00:00','Z')
 def item(index=0,source='eurostat-en'):
     return {'id':f'{source}:{index}','sourceId':source,'url':f'https://ec.europa.eu/eurostat/product?code={index}','updatedAt':None,'title':'Original title'}
 def state(items):return {'feed':{'lastSuccessfulRefreshAt':stamp(NOW),'items':items},'history':items,'mediaState':{}}
-SOURCES=[{'id':'eurostat-en','allowedHosts':['ec.europa.eu']},{'id':'cnil','allowedHosts':['www.cnil.fr']},{'id':'arxiv-ai-en','allowedHosts':['arxiv.org']}]
+SOURCES=[copy.deepcopy(MEDIA_SPECS[id]) for id in ['eurostat-en','cnil','arxiv-ai-en']]
 def image():return extract_image('<img src="/eurostat/o/adaptive-media/image/1/Preview/chart.jpg" alt="Original chart">','https://ec.europa.eu/eurostat/product','eurostat-en','Title')
 
 class MediaTests(unittest.TestCase):
@@ -19,16 +20,16 @@ class MediaTests(unittest.TestCase):
         self.assertEqual(result['alt'],'Original chart');self.assertTrue(result['src'].endswith('/chart.jpg'))
         self.assertIsNone(extract_image('You might also like<img src="/eurostat/o/adaptive-media/image/2/other.jpg">','https://ec.europa.eu','eurostat-en','Title'))
 
-    def test_cnil_whole_illustration_and_correct_license(self):
-        result=extract_image('<img src="/themes/custom/logo.png"><img src="/sites/default/files/styles/contenu_generique_visuel/public/2026-11/recherche_sante_interne.png?itok=public" alt="Source caption">','https://www.cnil.fr/fr/article','cnil','Title')
-        self.assertEqual(result['licenseName'],'CC BY-NC-ND 4.0');self.assertEqual(result['alt'],'Source caption');self.assertTrue(valid_image(result,'cnil'))
-        self.assertIsNone(extract_image('<img alt="EDPB" src="/sites/default/files/styles/contenu_generique_visuel/public/2026-11/privacy_for_kids.png">','https://www.cnil.fr','cnil','Title'))
+    def test_publisher_image_does_not_need_a_filename_or_license_allowlist(self):
+        result=extract_image('<meta property="og:image" content="https://www.cnil.fr/sites/default/files/another-illustration.png">','https://www.cnil.fr/fr/article','cnil','Title')
+        self.assertTrue(valid_image(result,'cnil'));self.assertEqual(result['attribution'],'CNIL')
+        self.assertTrue(result['src'].endswith('another-illustration.png'))
 
     def test_source_path_protocol_and_license_validation(self):
         original=image()
-        for url in ['http://ec.europa.eu/eurostat/o/adaptive-media/image/1/x.jpg','https://ec.europa.eu.evil.test/eurostat/o/adaptive-media/image/1/x.jpg','https://user:pass@ec.europa.eu/eurostat/o/adaptive-media/image/1/x.jpg','https://ec.europa.eu/private/pixel','https://ec.europa.eu:8443/eurostat/o/adaptive-media/image/1/x.jpg']:
+        for url in ['http://ec.europa.eu/eurostat/o/adaptive-media/image/1/x.jpg','https://ec.europa.eu.evil.test/eurostat/o/adaptive-media/image/1/x.jpg','https://user:pass@ec.europa.eu/eurostat/o/adaptive-media/image/1/x.jpg','https://127.0.0.1/private/pixel','https://ec.europa.eu:8443/eurostat/o/adaptive-media/image/1/x.jpg']:
             self.assertFalse(valid_image({**original,'src':url},'eurostat-en'))
-        self.assertFalse(valid_image({**original,'licenseUrl':'https://example.com'},'eurostat-en'))
+        self.assertFalse(valid_image({**original,'licenseUrl':'javascript:alert(1)'},'eurostat-en'))
         self.assertFalse(valid_image(original,'arxiv-ai-en'))
 
     def test_daily_cache_and_empty_media_cache(self):
@@ -40,8 +41,8 @@ class MediaTests(unittest.TestCase):
         empty['feed']['lastSuccessfulRefreshAt']=stamp(later);none.reset_mock();enrich_media(empty,SOURCES,later,none);none.assert_not_called()
 
     def test_lookup_cap_and_no_arxiv_page_or_pdf(self):
-        entries=[item(index) for index in range(8)]+[item(0,'arxiv-ai-en')];fetch=Mock(return_value=image())
-        enrich_media(state(entries),SOURCES,NOW,fetch);self.assertEqual(fetch.call_count,6)
+        entries=[item(index) for index in range(MAX_LOOKUPS+2)]+[item(0,'arxiv-ai-en')];fetch=Mock(return_value=image())
+        enrich_media(state(entries),SOURCES,NOW,fetch);self.assertEqual(fetch.call_count,MAX_LOOKUPS)
         self.assertTrue(all(call.args[0]['sourceId']!='arxiv-ai-en' for call in fetch.call_args_list))
 
     def test_failed_metadata_preserves_prior_image(self):
@@ -53,5 +54,14 @@ class MediaTests(unittest.TestCase):
     def test_total_feed_outage_does_not_make_new_metadata_requests(self):
         initial=state([item()]);initial['feed']['lastSuccessfulRefreshAt']=stamp(NOW-timedelta(days=1));fetch=Mock()
         self.assertIs(enrich_media(initial,SOURCES,NOW,fetch),initial);fetch.assert_not_called()
+
+    def test_feed_media_uses_largest_image_and_preserves_query(self):
+        entry=ET.fromstring('<item xmlns:media="http://search.yahoo.com/mrss/"><media:thumbnail url="https://i.guim.co.uk/small.jpg" width="140"/><media:content url="https://i.guim.co.uk/large.jpg?width=1000&amp;quality=85" width="1000"/></item>')
+        result=feed_image(entry,MEDIA_SPECS['guardian-business'],'Title')
+        self.assertIn('large.jpg?width=1000&quality=85',result['src'])
+
+    def test_embedded_feed_image_needs_no_article_request(self):
+        initial=state([{**item(),'image':{**image(),'origin':'feed'}}]);fetch=Mock()
+        enrich_media(initial,SOURCES,NOW,fetch);fetch.assert_not_called()
 
 if __name__=='__main__':unittest.main()

@@ -65,12 +65,12 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(parse_date('2026-03-29T02:30:00'), (None, None))
         self.assertEqual(parse_date('2026-11-06'), (None, '2026-11-06'))
 
-    def test_linuxfr_license_and_path_gate(self):
+    def test_linuxfr_entries_do_not_depend_on_rights_metadata(self):
         def entry(path, rights):
             return f'<entry><id>{path}</id><title>Contribution</title><link href="https://linuxfr.org/{path}"/><published>2026-11-06T00:00:00Z</published><rights>{rights}</rights><author><name>Auteur</name></author><content type="html">&lt;p&gt;Un paragraphe original suffisamment long pour constituer un extrait.&lt;/p&gt;&lt;p&gt;Un autre paragraphe, non repris.&lt;/p&gt;</content></entry>'
         data = ('<feed xmlns="http://www.w3.org/2005/Atom">'+entry('journaux/test','https://creativecommons.org/licenses/by-sa/4.0/')+entry('liens/test','https://creativecommons.org/licenses/by-sa/4.0/')+entry('news/test','Tous droits réservés')+entry('news/sans-licence','')+'</feed>').encode()
         result = parse_feed(data, source('linuxfr-ai-fr'), NOW)
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 4)
         self.assertEqual(result[0]['contentKind'], 'opinion')
         self.assertEqual(result[0]['summary'], 'Un paragraphe original suffisamment long pour constituer un extrait.')
 
@@ -121,14 +121,26 @@ class CollectorTests(unittest.TestCase):
 
     def test_caps_budget_and_language_isolation(self):
         configured = source()
-        configured['maxItems'] = 40
-        result = collect_language([configured], 'fr', {}, NOW, lambda s, p: (rss(''.join(rss_item(i) for i in range(50))), {}))
-        self.assertEqual(len(result['feed']['items']), 30)
+        configured['maxItems'] = 80
+        result = collect_language([configured], 'fr', {}, NOW, lambda s, p: (rss(''.join(rss_item(i) for i in range(90))), {}))
+        self.assertEqual(len(result['feed']['items']), 60)
         self.assertLess(len(json.dumps(result['feed']).encode()), 200_000)
         invalid = copy.deepcopy(result['feed'])
         invalid['items'][0]['language'] = 'en'
         with self.assertRaises(ValueError):
             validate_feed(invalid, 'fr')
+
+    def test_busy_sources_share_the_public_selection(self):
+        configured=[source('insee'),source('cnil')]
+        for item in configured:item['maxItems']=40
+        def fetch(item,prior):
+            body=''.join(rss_item(i) for i in range(40))
+            if item['id']=='cnil':body=body.replace('https://www.insee.fr/fr/statistiques/','https://www.cnil.fr/fr/article/')
+            return rss(body),{}
+        result=collect_language(configured,'fr',{},NOW,fetch)
+        self.assertEqual(len(result['feed']['items']),60)
+        self.assertEqual(sum(item['sourceId']=='insee' for item in result['feed']['items']),30)
+        self.assertEqual(sum(item['sourceId']=='cnil' for item in result['feed']['items']),30)
         invalid = copy.deepcopy(result['feed'])
         invalid['items'][1]['id'] = invalid['items'][0]['id']
         with self.assertRaises(ValueError):

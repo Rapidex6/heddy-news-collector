@@ -1,76 +1,78 @@
 # Heddy news collector
 
-This repository contains only the public news collector and its bounded feed history.
-It never contains the website, the mascot, the Studio, game assets, credentials, or PDFs.
+Only the public collector and its bounded feed history belong in this repository.
+No website source, mascot, Studio/game assets, credentials, image files or PDFs.
 
 ## Sources and content
 
-`sources.json` is the reviewed selection: Insee, Économie.gouv, CNIL and explicitly
-licensed LinuxFr AI contributions in French; Eurostat economy news, NIST News, NSF,
-and arXiv cs.AI descriptive metadata in English. The two selections may differ.
-The Conversation France is disabled. French science coverage is limited.
+The registry in sources.json contains 27 accessible RSS/Atom feeds, split into
+15 French and 12 English feeds. It combines the existing institutional sources
+with Numerama, Frandroid, 01net, Les Numériques, Futura, Sciences et Avenir,
+Le Monde economy/science, BFM Business, BDM, ActuIA, The Verge, Ars Technica,
+ScienceAlert, Live Science, BBC Business, The Guardian Business, NASA and
+The Decoder. Availability and directly loadable publisher images determine new
+source selection; licence text is not an inclusion/exclusion filter.
 
-The collector keeps original titles, authors and publisher summaries, without
-translation or generated summaries. LinuxFr accepts only `/news/` or `/journaux/`
-entries with explicit CC BY-SA 4.0 rights; its excerpt is an original paragraph.
-arXiv abstracts are identified as research preprints, with all authors and its
-required acknowledgement. All public entries carry source, publication date,
-retrieval date, applicable reuse terms, attribution and the original HTTPS link.
-Images are optional remote URLs, never downloaded or stored as files. The
-collector reads bounded article HTML only for Eurostat-owned statistical charts
-and CNIL-owned illustrations, from reviewed publisher hosts and paths. Stock
-photographs, third-party illustrations and arXiv pages/PDFs are excluded.
-Eurostat charts retain CC BY 4.0 attribution. CNIL illustrations retain
-CC BY-NC-ND 4.0 attribution and must be displayed whole, without cropping or
-alteration, on this personal, noncommercial site. Detailed attribution and
-licence links remain available in the website's global Sources disclosure.
-CNIL filenames are explicitly reviewed in `media.py`; unreviewed or third-party
-artwork hosted on the same site is excluded. Future images need that review.
+Titles and publisher excerpts remain in their original language. Full article
+bodies are not republished. Authors, dates, publisher names and original article
+links remain available. arXiv entries are marked as research preprints; its
+single bounded metadata request is serial and retains its acknowledgement.
 
-## Runtime
+Images are optional publisher-hosted HTTPS URLs discovered from media:content,
+media:thumbnail, image enclosures, or images embedded in feed descriptions/content.
+The largest supplied media candidate is preferred. The four existing HTML
+fallback sources have bounded, cached image metadata lookups. The collector never
+downloads or stores image bytes. Publisher/CDN host allowlists, public HTTPS
+addresses, no credentials/alternate ports, and byte/time limits remain enforced.
+A broken picture does not discard the article.
 
-Python 3.13.18; exact dependency versions and official PyPI hashes are in
-`requirements.lock`. Install with `python -m pip install --require-hashes -r requirements.lock`.
-Run `python -m unittest discover -v`, then `python collector.py`.
-Outputs: `output/news-feed.fr.json` and `output/news-feed.en.json`.
+Source presentation (home URL, short name, logo, initials and media hosts) travels
+with the JSON data. New registered sources do not require a new frontend map.
 
-Each JSON has at most 30 entries and 200,000 UTF-8 bytes. Display window: today
-and the previous seven civil days in Europe/Paris, using publication dates.
-`publishedAt`, `updatedAt`, `retrievedAt` and `lastSuccessfulRefreshAt` remain distinct.
-Dates without an offset use Europe/Paris; nonexistent DST local times are rejected.
+## Runtime and bounds
 
-One bounded arXiv request per run, serial connection, at least a three-second wait
-before its request. Other sources use ETag/Last-Modified when supplied. Valid empty
-feeds preserve history; partial failures retain other sources; total outages retain
-the last useful public JSON. History is bounded to eight Paris dates and 120 entries
-per source, independently of public caps. Missing publication dates are excluded.
+Python 3.13.18, pinned dependencies in requirements.lock. Install with
+python -m pip install --require-hashes -r requirements.lock.
+Run python -m unittest discover -v, then python collector.py.
 
-Image metadata is cached in the language state for 24 hours, including a missing
-image result. At most six article pages per language are checked in one run,
-with a one-megabyte HTML limit and ten-second timeout. Failures preserve a
-previously validated image. A total feed outage triggers no image lookups.
+Outputs are output/news-feed.fr.json and output/news-feed.en.json.
+Each JSON has at most 60 entries and 200,000 UTF-8 bytes, from today and the
+previous seven civil days in Europe/Paris. Publication, update, retrieval and
+successful-refresh timestamps stay distinct. Missing publication dates and future
+entries are excluded. Dates without an offset use Paris; nonexistent DST times
+are rejected.
 
-## Durable history and publication
+Selection reserves a place for each source before filling the remaining slots,
+then sorts the chosen articles chronologically. Per-source caps prevent a busy
+publisher dominating the feed. AI categories are also inferred from publisher
+tags and explicit AI terminology in titles.
 
-The `news-state` Git branch stores separate `state/fr.json` and `state/en.json`.
-This is durable repository state, not a cache or expiring workflow artifact.
-No site files are committed to that branch. Updates use non-forced ref changes.
-The workflow runs hourly at minute 17 and supports manual runs; standard public
-GitHub-hosted runners are used. Scheduled workflows may be delayed or disabled
-after 60 inactive days; check the latest run and re-enable if needed.
+At most four ordinary feeds are requested concurrently; arXiv is requested once,
+serially after those connections close, with its three-second delay. Conditional
+requests use publisher ETag/Last-Modified values. History remains bounded to eight
+Paris dates and 120 entries per source, independently of public caps. Empty feeds
+and partial failures retain useful history; complete outages preserve the last
+useful public JSON.
 
-Publication is disabled until repository variable `NEWS_PUBLISH_ENABLED` is `true`.
-Validate a real runner first, deploy the complete website second, then enable it.
-Set repository variables `NEWS_SFTP_HOST`, `NEWS_SFTP_PORT`, `NEWS_SFTP_USER`,
-`NEWS_SFTP_ROOT`, `NEWS_SFTP_HOST_FINGERPRINT` (SHA256 pinned SSH server key).
-The existing SFTP password goes only in Actions secret `NEWS_SFTP_PASSWORD`.
-Never place it in source code, an issue, a workflow file, or this document.
+HTML fallback metadata has a 24-hour cache, including missing images, a maximum
+of eight lookups per language/run, a 1MB HTML limit and ten-second timeout.
+Previously valid images survive failed refreshes. Total feed outages trigger no
+HTML lookups. No linked arXiv page or PDF is requested.
 
-Only the two fixed JSON filenames are transferred. Each upload is verified by hash
-and published through a temporary sibling and atomic POSIX rename. A failed rename
-does not remove the previous file. Languages are published independently.
-General website deployments must preserve existing `news-feed.*.json`; only seed
-them when absent. The separate website deployment tool implements that rule.
+## History and publication
 
-The complete deployed site, including the initial two feeds, must remain below
-100,000,000 bytes. This collector repository alone is not the website deployment.
+The news-state Git branch stores separate state/fr.json and state/en.json.
+This is durable history, not an expiring Actions cache. Updates are non-forced.
+
+The workflow runs hourly at minute 17 UTC and supports manual runs. Scheduled
+workflows may be delayed, or disabled after 60 inactive days.
+NEWS_PUBLISH_ENABLED must be true before publication. Configure repository
+variables NEWS_SFTP_HOST, NEWS_SFTP_PORT, NEWS_SFTP_USER, NEWS_SFTP_ROOT and the
+pinned SHA256 NEWS_SFTP_HOST_FINGERPRINT. The existing SFTP password belongs only
+in Actions secret NEWS_SFTP_PASSWORD.
+
+Only the two fixed JSON filenames are sent. Each upload is verified by hash and
+published with a temporary sibling plus atomic POSIX rename. Failed renames
+preserve the previous file. Website deployments preserve existing runtime feeds.
+Deploy a compatible frontend before publishing an expanded source selection.
+The full site must remain below 100,000,000 bytes.

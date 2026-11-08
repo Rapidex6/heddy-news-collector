@@ -12,13 +12,22 @@
       ],
       "licence": "Licence Ouverte Etalab 2.0",
       "policyUrl": "https://www.insee.fr/fr/information/2008466",
-      "attribution": "Source : Insee ; URL originale et date de mise à jour connue ; ne pas utiliser le logo.",
+      "attribution": "Source: Insee. Original article linked.",
       "licenseUrl": "https://www.insee.fr/fr/information/2008466",
       "allowedHosts": [
         "www.insee.fr",
         "insee.fr"
       ],
-      "maxItems": 10
+      "maxItems": 10,
+      "home": "https://www.insee.fr",
+      "logo": "https://www.insee.fr/static/img/apple-touch-icon.png",
+      "shortName": "Insee",
+      "initials": "I",
+      "mediaHosts": [
+        "www.insee.fr",
+        "insee.fr"
+      ],
+      "mediaMode": "feed"
     },
     {
       "id": "cnil",
@@ -31,13 +40,22 @@
       ],
       "licence": "CC BY-ND 4.0",
       "policyUrl": "https://www.cnil.fr/fr/mentions-legales",
-      "attribution": "Titre ; Source : CNIL – https://www.cnil.fr ; date d'extraction ; lien vers la licence et l'original.",
+      "attribution": "Source: CNIL. Original article linked.",
       "licenseUrl": "https://www.cnil.fr/fr/mentions-legales",
       "allowedHosts": [
         "www.cnil.fr",
         "cnil.fr"
       ],
-      "maxItems": 10
+      "maxItems": 10,
+      "home": "https://www.cnil.fr",
+      "logo": "https://www.cnil.fr/themes/custom/bootstrap_cnil/favicon.ico",
+      "shortName": "CNIL",
+      "initials": "C",
+      "mediaHosts": [
+        "www.cnil.fr",
+        "cnil.fr"
+      ],
+      "mediaMode": "page"
     },
     {
       "id": "economie",
@@ -50,13 +68,22 @@
       ],
       "licence": "Licence Ouverte Etalab 2.0 / conditions RSS",
       "policyUrl": "https://www.economie.gouv.fr/rss",
-      "attribution": "Source : Ministères économiques et financiers – economie.gouv.fr ; lien original et date.",
+      "attribution": "Source: Économie.gouv.fr. Original article linked.",
       "licenseUrl": "https://www.economie.gouv.fr/rss",
       "allowedHosts": [
         "www.economie.gouv.fr",
         "economie.gouv.fr"
       ],
-      "maxItems": 10
+      "maxItems": 10,
+      "home": "https://www.economie.gouv.fr",
+      "logo": "https://www.economie.gouv.fr/themes/custom/economie/favicon.ico",
+      "shortName": "Économie.gouv.fr",
+      "initials": "É",
+      "mediaHosts": [
+        "www.economie.gouv.fr",
+        "economie.gouv.fr"
+      ],
+      "mediaMode": "feed"
     },
     {
       "id": "eurostat-en",
@@ -69,12 +96,20 @@
       ],
       "licence": "CC BY 4.0 (EU-owned editorial content)",
       "policyUrl": "https://ec.europa.eu/eurostat/help/copyright-notice",
-      "attribution": "Eurostat / European Union. Original title, author and publication date; text presentation only.",
+      "attribution": "Source: Eurostat. Original article linked.",
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
       "allowedHosts": [
         "ec.europa.eu"
       ],
-      "maxItems": 10
+      "maxItems": 10,
+      "home": "https://ec.europa.eu/eurostat",
+      "logo": "https://ec.europa.eu/eurostat/o/estat-theme-ecl/images/favicon.ico",
+      "shortName": "Eurostat",
+      "initials": "E",
+      "mediaHosts": [
+        "ec.europa.eu"
+      ],
+      "mediaMode": "page"
     },
     {
       "id": "nist-en",
@@ -88,13 +123,22 @@
       ],
       "licence": "Public information reuse permission (NIST)",
       "policyUrl": "https://www.nist.gov/copyrights-disclaimers",
-      "attribution": "NIST. Original title, supplied author(s) and publication date.",
+      "attribution": "Source: NIST News. Original article linked.",
       "licenseUrl": "https://www.nist.gov/copyrights-disclaimers",
       "allowedHosts": [
         "www.nist.gov",
         "nist.gov"
       ],
-      "maxItems": 10
+      "maxItems": 10,
+      "home": "https://www.nist.gov",
+      "logo": "https://www.nist.gov/themes/custom/nist_www/favicon.ico",
+      "shortName": "NIST",
+      "initials": "N",
+      "mediaHosts": [
+        "www.nist.gov",
+        "nist.gov"
+      ],
+      "mediaMode": "page"
     },
     {
       "id": "nsf-en",
@@ -108,13 +152,22 @@
       ],
       "licence": "Public text reuse permission (NSF)",
       "policyUrl": "https://www.nsf.gov/policies/digital",
-      "attribution": "Courtesy: U.S. National Science Foundation.",
+      "attribution": "Source: U.S. National Science Foundation. Original article linked.",
       "licenseUrl": "https://www.nsf.gov/policies/digital",
       "allowedHosts": [
         "www.nsf.gov",
         "nsf.gov"
       ],
-      "maxItems": 10
+      "maxItems": 10,
+      "home": "https://www.nsf.gov",
+      "logo": "https://www.nsf.gov/favicon.ico",
+      "shortName": "NSF",
+      "initials": "U",
+      "mediaHosts": [
+        "www.nsf.gov",
+        "nsf.gov"
+      ],
+      "mediaMode": "page"
     },
     {
       "id": "linuxfr-ai-fr",
@@ -128,12 +181,20 @@
       ],
       "licence": "CC BY-SA 4.0",
       "policyUrl": "https://linuxfr.org/aide",
-      "attribution": "Auteur/pseudonyme, LinuxFr.org, titre, URL originale et CC BY-SA 4.0 ; conserver les mentions et indiquer le prélèvement d’un extrait.",
+      "attribution": "Source: LinuxFr.org — Intelligence artificielle. Original article linked.",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
       "allowedHosts": [
         "linuxfr.org"
       ],
-      "maxItems": 3
+      "maxItems": 3,
+      "home": "https://linuxfr.org",
+      "logo": "https://linuxfr.org/favicon.ico",
+      "shortName": "LinuxFr.org",
+      "initials": "LF",
+      "mediaHosts": [
+        "linuxfr.org"
+      ],
+      "mediaMode": "feed"
     },
     {
       "id": "arxiv-ai-en",
@@ -148,13 +209,571 @@
       ],
       "licence": "CC0 1.0 (descriptive metadata)",
       "policyUrl": "https://info.arxiv.org/help/api/tou.html",
-      "attribution": "Thank you to arXiv for use of its open access interoperability.",
+      "attribution": "Source: arXiv — Artificial Intelligence (cs.AI). Original article linked.",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "allowedHosts": [
         "arxiv.org",
         "export.arxiv.org"
       ],
-      "maxItems": 5
+      "maxItems": 5,
+      "home": "https://arxiv.org",
+      "logo": "https://arxiv.org/favicon.ico",
+      "shortName": "arXiv",
+      "initials": "aX",
+      "mediaHosts": [
+        "arxiv.org",
+        "export.arxiv.org"
+      ],
+      "mediaMode": "feed"
+    },
+    {
+      "id": "numerama",
+      "name": "Numerama",
+      "shortName": "Numerama",
+      "language": "fr",
+      "feedUrl": "https://www.numerama.com/feed/",
+      "home": "https://www.numerama.com",
+      "logo": "https://www.numerama.com/apple-touch-icon.png",
+      "initials": "N",
+      "type": "presse",
+      "topics": [
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.numerama.com/feed/",
+      "attribution": "Source: Numerama. Original article linked.",
+      "allowedHosts": [
+        "www.numerama.com",
+        "numerama.com"
+      ],
+      "mediaHosts": [
+        "img.numerama.com",
+        "www.numerama.com",
+        "numerama.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "frandroid",
+      "name": "Frandroid",
+      "shortName": "Frandroid",
+      "language": "fr",
+      "feedUrl": "https://www.frandroid.com/feed",
+      "home": "https://www.frandroid.com",
+      "logo": "https://images.frandroid.com/wp-content/uploads/2019/12/cropped-flarge-180x180.png",
+      "initials": "F",
+      "type": "presse",
+      "topics": [
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.frandroid.com/feed",
+      "attribution": "Source: Frandroid. Original article linked.",
+      "allowedHosts": [
+        "www.frandroid.com",
+        "frandroid.com"
+      ],
+      "mediaHosts": [
+        "img.frandroid.com",
+        "frandroid.com",
+        "www.frandroid.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "01net",
+      "name": "01net",
+      "shortName": "01net",
+      "language": "fr",
+      "feedUrl": "https://www.01net.com/feed/",
+      "home": "https://www.01net.com",
+      "logo": "https://www.01net.com/apple-touch-icon.png",
+      "initials": "0",
+      "type": "presse",
+      "topics": [
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.01net.com/feed/",
+      "attribution": "Source: 01net. Original article linked.",
+      "allowedHosts": [
+        "www.01net.com",
+        "01net.com"
+      ],
+      "mediaHosts": [
+        "01net.com",
+        "www.01net.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "lesnumeriques",
+      "name": "Les Numériques",
+      "shortName": "Les Numériques",
+      "language": "fr",
+      "feedUrl": "https://www.lesnumeriques.com/rss.xml",
+      "home": "https://www.lesnumeriques.com",
+      "logo": "https://cdn.lesnumeriques.com/assets/favicon/favicon-32x32.png?v=1573230463777",
+      "initials": "LN",
+      "type": "presse",
+      "topics": [
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.lesnumeriques.com/rss.xml",
+      "attribution": "Source: Les Numériques. Original article linked.",
+      "allowedHosts": [
+        "www.lesnumeriques.com",
+        "lesnumeriques.com"
+      ],
+      "mediaHosts": [
+        "cdn.lesnumeriques.com",
+        "www.lesnumeriques.com",
+        "lesnumeriques.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "futura",
+      "name": "Futura",
+      "shortName": "Futura",
+      "language": "fr",
+      "feedUrl": "https://www.futura-sciences.com/rss/actualites.xml",
+      "home": "https://www.futura-sciences.com",
+      "logo": "https://www.futura-sciences.com/img/apple-touch-icon-66d99e00cb.png",
+      "initials": "F",
+      "type": "presse",
+      "topics": [
+        "sciences"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.futura-sciences.com/rss/actualites.xml",
+      "attribution": "Source: Futura. Original article linked.",
+      "allowedHosts": [
+        "www.futura-sciences.com",
+        "futura-sciences.com"
+      ],
+      "mediaHosts": [
+        "www.futura-sciences.com",
+        "cdn8.futura-sciences.com",
+        "futura-sciences.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "sciencesetavenir",
+      "name": "Sciences et Avenir",
+      "shortName": "Sciences et Avenir",
+      "language": "fr",
+      "feedUrl": "https://www.sciencesetavenir.fr/rss.xml",
+      "home": "https://www.sciencesetavenir.fr",
+      "logo": "https://www.sciencesetavenir.fr/icons/apple-touch-icon.png",
+      "initials": "Se",
+      "type": "presse",
+      "topics": [
+        "sciences"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.sciencesetavenir.fr/rss.xml",
+      "attribution": "Source: Sciences et Avenir. Original article linked.",
+      "allowedHosts": [
+        "www.sciencesetavenir.fr",
+        "sciencesetavenir.fr"
+      ],
+      "mediaHosts": [
+        "sciencesetavenir.fr",
+        "www.sciencesetavenir.fr"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "lemonde-eco",
+      "name": "Le Monde — Économie",
+      "shortName": "Le Monde",
+      "language": "fr",
+      "feedUrl": "https://www.lemonde.fr/economie/rss_full.xml",
+      "home": "https://www.lemonde.fr",
+      "logo": "https://www.lemonde.fr/bucket/resources/front/static/img/logos/pwa-180.png",
+      "initials": "LM",
+      "type": "presse",
+      "topics": [
+        "economie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.lemonde.fr/economie/rss_full.xml",
+      "attribution": "Source: Le Monde — Économie. Original article linked.",
+      "allowedHosts": [
+        "www.lemonde.fr",
+        "lemonde.fr"
+      ],
+      "mediaHosts": [
+        "www.lemonde.fr",
+        "lemonde.fr",
+        "img.lemde.fr"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "lemonde-science",
+      "name": "Le Monde — Sciences",
+      "shortName": "Le Monde",
+      "language": "fr",
+      "feedUrl": "https://www.lemonde.fr/sciences/rss_full.xml",
+      "home": "https://www.lemonde.fr",
+      "logo": "https://www.lemonde.fr/bucket/resources/front/static/img/logos/pwa-180.png",
+      "initials": "LM",
+      "type": "presse",
+      "topics": [
+        "sciences"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.lemonde.fr/sciences/rss_full.xml",
+      "attribution": "Source: Le Monde — Sciences. Original article linked.",
+      "allowedHosts": [
+        "www.lemonde.fr",
+        "lemonde.fr"
+      ],
+      "mediaHosts": [
+        "www.lemonde.fr",
+        "lemonde.fr",
+        "img.lemde.fr"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "bfm-business",
+      "name": "BFM Business",
+      "shortName": "BFM Business",
+      "language": "fr",
+      "feedUrl": "https://www.bfmtv.com/rss/economie/",
+      "home": "https://www.bfmtv.com",
+      "logo": "https://www.bfmtv.com/assets/v29/images/BFM_BUSINESS_default_16x9.1fe02e665ff091273c91059447a69de8.jpg",
+      "initials": "BB",
+      "type": "presse",
+      "topics": [
+        "economie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.bfmtv.com/rss/economie/",
+      "attribution": "Source: BFM Business. Original article linked.",
+      "allowedHosts": [
+        "www.bfmtv.com",
+        "bfmtv.com"
+      ],
+      "mediaHosts": [
+        "io-fsly-bfmtv.cdn.nextradiotv.com",
+        "www.bfmtv.com",
+        "bfmtv.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "bdm",
+      "name": "BDM",
+      "shortName": "BDM",
+      "language": "fr",
+      "feedUrl": "https://www.blogdumoderateur.com/feed/",
+      "home": "https://www.blogdumoderateur.com",
+      "logo": "https://f.hellowork.com/blogdumoderateur/2022/01/cropped-favicon-bdm-1-180x180.png",
+      "initials": "B",
+      "type": "presse",
+      "topics": [
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.blogdumoderateur.com/feed/",
+      "attribution": "Source: BDM. Original article linked.",
+      "allowedHosts": [
+        "www.blogdumoderateur.com",
+        "blogdumoderateur.com"
+      ],
+      "mediaHosts": [
+        "f.hellowork.com",
+        "blogdumoderateur.com",
+        "www.blogdumoderateur.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "actuia",
+      "name": "ActuIA",
+      "shortName": "ActuIA",
+      "language": "fr",
+      "feedUrl": "https://www.actuia.com/feed/",
+      "home": "https://www.actuia.com",
+      "logo": "https://www.actuia.com/apple-touch-icon.png",
+      "initials": "A",
+      "type": "presse",
+      "topics": [
+        "intelligence_artificielle",
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.actuia.com/feed/",
+      "attribution": "Source: ActuIA. Original article linked.",
+      "allowedHosts": [
+        "www.actuia.com",
+        "actuia.com"
+      ],
+      "mediaHosts": [
+        "www.actuia.com",
+        "actuia.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "theverge",
+      "name": "The Verge",
+      "shortName": "The Verge",
+      "language": "en",
+      "feedUrl": "https://www.theverge.com/rss/index.xml",
+      "home": "https://www.theverge.com",
+      "logo": "https://www.theverge.com/static-assets/icons/apple-touch-icon.png",
+      "initials": "TV",
+      "type": "presse",
+      "topics": [
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.theverge.com/rss/index.xml",
+      "attribution": "Source: The Verge. Original article linked.",
+      "allowedHosts": [
+        "www.theverge.com",
+        "theverge.com"
+      ],
+      "mediaHosts": [
+        "www.theverge.com",
+        "platform.theverge.com",
+        "theverge.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "ars",
+      "name": "Ars Technica",
+      "shortName": "Ars Technica",
+      "language": "en",
+      "feedUrl": "https://feeds.arstechnica.com/arstechnica/index/",
+      "home": "https://arstechnica.com",
+      "logo": "https://cdn.arstechnica.net/wp-content/uploads/2016/10/cropped-ars-logo-512_480-300x300.png",
+      "initials": "AT",
+      "type": "presse",
+      "topics": [
+        "technologie",
+        "sciences"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://feeds.arstechnica.com/arstechnica/index/",
+      "attribution": "Source: Ars Technica. Original article linked.",
+      "allowedHosts": [
+        "arstechnica.com",
+        "www.arstechnica.com"
+      ],
+      "mediaHosts": [
+        "arstechnica.com",
+        "www.arstechnica.com",
+        "cdn.arstechnica.net"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "sciencealert",
+      "name": "ScienceAlert",
+      "shortName": "ScienceAlert",
+      "language": "en",
+      "feedUrl": "https://www.sciencealert.com/feed",
+      "home": "https://www.sciencealert.com",
+      "logo": "https://www.sciencealert.com/images/2022/08/cropped-sa-rounded-favicon-180x180.png",
+      "initials": "S",
+      "type": "presse",
+      "topics": [
+        "sciences"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.sciencealert.com/feed",
+      "attribution": "Source: ScienceAlert. Original article linked.",
+      "allowedHosts": [
+        "www.sciencealert.com",
+        "sciencealert.com"
+      ],
+      "mediaHosts": [
+        "sciencealert.com",
+        "www.sciencealert.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "livescience",
+      "name": "Live Science",
+      "shortName": "Live Science",
+      "language": "en",
+      "feedUrl": "https://www.livescience.com/feeds/all",
+      "home": "https://www.livescience.com",
+      "logo": "https://cdn.mos.cms.futurecdn.net/flexiimages/ze6kddeaxb1774625505.png",
+      "initials": "LS",
+      "type": "presse",
+      "topics": [
+        "sciences"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.livescience.com/feeds/all",
+      "attribution": "Source: Live Science. Original article linked.",
+      "allowedHosts": [
+        "www.livescience.com",
+        "livescience.com"
+      ],
+      "mediaHosts": [
+        "cdn.mos.cms.futurecdn.net",
+        "livescience.com",
+        "www.livescience.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "bbc-business",
+      "name": "BBC Business",
+      "shortName": "BBC Business",
+      "language": "en",
+      "feedUrl": "https://feeds.bbci.co.uk/news/business/rss.xml",
+      "home": "https://www.bbc.co.uk",
+      "logo": "https://static.files.bbci.co.uk/core/website/assets/static/icons/touch/bbc/touch-icon-114.933cf47051.png",
+      "initials": "BB",
+      "type": "presse",
+      "topics": [
+        "economie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://feeds.bbci.co.uk/news/business/rss.xml",
+      "attribution": "Source: BBC Business. Original article linked.",
+      "allowedHosts": [
+        "www.bbc.co.uk",
+        "bbc.co.uk"
+      ],
+      "mediaHosts": [
+        "ichef.bbci.co.uk",
+        "bbc.co.uk",
+        "www.bbc.co.uk"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "guardian-business",
+      "name": "The Guardian — Business",
+      "shortName": "The Guardian",
+      "language": "en",
+      "feedUrl": "https://www.theguardian.com/uk/business/rss",
+      "home": "https://www.theguardian.com",
+      "logo": "https://assets.guim.co.uk/static/frontend/icons/homescreen/apple-touch-icon.svg",
+      "initials": "TG",
+      "type": "presse",
+      "topics": [
+        "economie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.theguardian.com/uk/business/rss",
+      "attribution": "Source: The Guardian — Business. Original article linked.",
+      "allowedHosts": [
+        "www.theguardian.com",
+        "theguardian.com"
+      ],
+      "mediaHosts": [
+        "www.theguardian.com",
+        "i.guim.co.uk",
+        "theguardian.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "nasa",
+      "name": "NASA",
+      "shortName": "NASA",
+      "language": "en",
+      "feedUrl": "https://www.nasa.gov/feed/",
+      "home": "https://www.nasa.gov",
+      "logo": "https://www.nasa.gov/wp-content/plugins/nasa-hds-core-setup/assets/favicons/apple-touch-icon-57x57.png",
+      "initials": "N",
+      "type": "presse",
+      "topics": [
+        "sciences"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://www.nasa.gov/feed/",
+      "attribution": "Source: NASA. Original article linked.",
+      "allowedHosts": [
+        "www.nasa.gov",
+        "nasa.gov"
+      ],
+      "mediaHosts": [
+        "nasa.gov",
+        "www.nasa.gov",
+        "assets.science.nasa.gov"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
+    },
+    {
+      "id": "thedecoder",
+      "name": "The Decoder",
+      "shortName": "The Decoder",
+      "language": "en",
+      "feedUrl": "https://the-decoder.com/feed/",
+      "home": "https://the-decoder.com",
+      "logo": "https://the-decoder.com/resources/favicons/apple-touch-icon-180x180.png?v=3",
+      "initials": "TD",
+      "type": "presse",
+      "topics": [
+        "intelligence_artificielle",
+        "technologie"
+      ],
+      "licence": null,
+      "licenseUrl": null,
+      "policyUrl": "https://the-decoder.com/feed/",
+      "attribution": "Source: The Decoder. Original article linked.",
+      "allowedHosts": [
+        "the-decoder.com",
+        "www.the-decoder.com"
+      ],
+      "mediaHosts": [
+        "the-decoder.com",
+        "www.the-decoder.com"
+      ],
+      "mediaMode": "feed",
+      "maxItems": 6
     }
   ]
 }

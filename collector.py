@@ -1,4 +1,4 @@
-"""Bounded RSS/Atom collection. Public text metadata only; no linked pages/media.
+"""Bounded RSS/Atom collection with publisher-hosted image URLs.
 
 python collector.py --output ../public --state .state
 State is restored from a dedicated Git branch in production, never an expiring cache.
@@ -21,13 +21,14 @@ from html.parser import HTMLParser
 from html import unescape
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from media import enrich_media, valid_image
+from concurrent.futures import ThreadPoolExecutor
+from media import enrich_media, valid_image, feed_image
 
 PARIS = ZoneInfo("Europe/Paris")
 UTC = timezone.utc
 MAX_BYTES = 2_000_000
 FEED_BUDGET = 200_000
-MAX_ITEMS = 30
+MAX_ITEMS = 60
 TIMEOUT = 25
 USER_AGENT = "HeddyNewsCollector/1.0 (+https://heddy.fr/news; contact@heddy.fr)"
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
@@ -166,18 +167,13 @@ def parse_feed(data, source, now):
             continue
         published, published_date = parse_date(field(entry, "published" if atom else "pubdate", "date"))
         updated, _ = parse_date(field(entry, "updated"))
-        rights = field(entry, "rights", "copyright")
-        if re.search(r"all rights reserved|tous droits réservés|by-nc", rights, re.I):
-            continue
         summary = field(entry, "summary") if atom else field(entry, "description")
         summary_kind = "publisher_excerpt" if summary else "none"
         kind = "news"
         if source["id"] == "linuxfr-ai-fr":
             article_path = urllib.parse.urlsplit(url).path
-            if not article_path.startswith(("/news/", "/journaux/")) or not re.search(r"creativecommons\.org/licenses/by-sa/4\.0|CC\s*BY[ -]SA\s*4\.0", rights, re.I):
-                continue
             summary = excerpt(field(entry, "content"))
-            summary_kind = "licensed_excerpt" if summary else "none"
+            summary_kind = "publisher_excerpt" if summary else "none"
             kind = "opinion" if article_path.startswith("/journaux/") else "community_news"
         if source["id"] == "arxiv-ai-en":
             if not urllib.parse.urlsplit(url).path.startswith("/abs/"):
@@ -189,6 +185,8 @@ def parse_feed(data, source, now):
             if name and name != title and name not in authors:
                 authors.append(name)
         summary = plain(summary) or None
+        if summary and len(summary.encode('utf-8'))>2000:
+            summary=plain(excerpt(field(entry,'summary' if atom else 'description'))) or None
         # Never cut protected publisher wording to fit a byte budget.
         if summary and len(summary.encode("utf-8")) > 20_000:
             summary, summary_kind = None, "none"
@@ -198,11 +196,19 @@ def parse_feed(data, source, now):
         item = {"id": source["id"] + ":" + hashlib.sha256(identity.encode()).hexdigest()[:24],
                 "sourceId": source["id"], "sourceName": source["name"], "sourceType": source["type"],
                 "title": title, "url": url, "publishedAt": published, "publishedDate": published_date,
-                "updatedAt": updated, "retrievedAt": stamp(now), "topics": source["topics"],
+                "updatedAt": updated, "retrievedAt": stamp(now), "topics": list(source["topics"]),
                 "summary": summary, "summaryKind": summary_kind, "authors": authors,
-                "licenseName": source["licence"], "licenseUrl": source["licenseUrl"],
+                "licenseName": source.get("licence"), "licenseUrl": source.get("licenseUrl"),
                 "attribution": source["attribution"], "language": source["language"], "contentKind": kind}
         if in_window(item, now):
+            categories=' '.join(plain(e.get('term') or ''.join(e.itertext())) for e in children(entry,'category'))
+            text=title+' '+categories
+            if re.search(r'\b(?:IA|AI|LLMs?)\b',text) or re.search(r'intelligence artificielle|artificial intelligence|openai|chatgpt|anthropic|claude|machine learning|deep learning',text,re.I):
+                item['topics']=list(dict.fromkeys(item['topics']+['intelligence_artificielle','technologie']))
+            for topic,pattern in [('sciences',r'scienc|astronom|spatial|physiqu|biolog'),('economie',r'econom|business|financ')]:
+                if re.search(pattern,categories,re.I) and topic not in item['topics']:item['topics'].append(topic)
+            image=feed_image(entry,source,title)
+            if image:item['image']=image
             items.append(item)
     return items
 
@@ -259,7 +265,7 @@ def validate_feed(feed, language):
                 raise ValueError("Invalid item timestamp")
         if item.get('image') is not None and not valid_image(item['image'],item['sourceId']):
             raise ValueError('Unsafe article image')
-        if not item["url"].startswith("https://") or not item["licenseUrl"].startswith("https://"):
+        if not item["url"].startswith("https://") or item.get('licenseUrl') is not None and not item['licenseUrl'].startswith('https://'):
             raise ValueError("Unsafe item URL")
     return feed
 
@@ -268,10 +274,23 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
     previous_sources = previous.get("sourceState", {})
     history = {item["id"]: item for item in previous.get("history", []) if in_window(item, now)}
     states, statuses, successes = {}, [], 0
+    def outcome(source):
+        try:
+            data,headers=fetch(source,previous_sources.get(source['id'],{}))
+            return data,headers,None
+        except (OSError,ValueError,urllib.error.URLError,socket.timeout) as error:
+            return None,{},error
+    ordinary=[s for s in sources if s['id']!='arxiv-ai-en']
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        fetched=dict(zip([s['id'] for s in ordinary],pool.map(outcome,ordinary)))
+    # arXiv remains a single serial request after the other feed connections close.
+    for source in sources:
+        if source['id']=='arxiv-ai-en':fetched[source['id']]=outcome(source)
     for source in sources:
         prior = previous_sources.get(source["id"], {})
         try:
-            data, headers = fetch(source, prior)
+            data, headers, error = fetched[source['id']]
+            if error:raise error
             entries = parse_feed(data, source, now) if data is not None else []
             if data is None and not prior.get("lastSuccessAt"):
                 raise ValueError("304 without a prior valid result")
@@ -289,9 +308,10 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
         statuses.append({"id": source["id"], "name": source["name"], "type": source["type"],
                          "status": status, "lastSuccessAt": current.get("lastSuccessAt"),
                          "newestPublicationAt": newest, "licenseName": source["licence"],
-                         "licenseUrl": source["licenseUrl"], "policyUrl": source["policyUrl"]})
+                         "licenseUrl": source.get("licenseUrl"), "policyUrl": source["policyUrl"],
+                         **{key:source[key] for key in ['home','logo','initials','shortName','allowedHosts','mediaHosts'] if key in source}})
     active = {s["id"]: s for s in sources}
-    unique, counts, selected = set(), {}, []
+    unique, buckets, selected = set(), {}, []
     ordered = sorted(history.values(), key=lambda i: (i.get("publishedAt") or i.get("publishedDate") or "", i.get("updatedAt") or "", i.get("retrievedAt") or "", i["id"]), reverse=True)
     retained = []
     for item in ordered:
@@ -301,11 +321,16 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
         # Bounded eight-day archive; independent of the narrower public selection.
         if sum(1 for old in retained if old["sourceId"] == source_id) < 120:
             retained.append(item)
-        if item["url"] in unique or counts.get(source_id, 0) >= active[source_id]["maxItems"] or len(selected) >= MAX_ITEMS:
+        if item["url"] in unique or len(buckets.get(source_id,[])) >= active[source_id]["maxItems"]:
             continue
         unique.add(item["url"])
-        counts[source_id] = counts.get(source_id, 0) + 1
-        selected.append(item)
+        buckets.setdefault(source_id,[]).append(item)
+    # Reserve a place for each active publisher before filling the remaining slots.
+    for round_index in range(max((len(bucket) for bucket in buckets.values()),default=0)):
+        for bucket in buckets.values():
+            if round_index<len(bucket) and len(selected)<MAX_ITEMS:selected.append(bucket[round_index])
+    rank={item['id']:index for index,item in enumerate(ordered)}
+    selected.sort(key=lambda item:rank[item['id']])
     refreshed = stamp(now) if successes else previous.get("lastSuccessfulRefreshAt")
     feed = {"schemaVersion": 1, "language": language, "timeZone": "Europe/Paris", "generatedAt": stamp(now),
             "lastSuccessfulRefreshAt": refreshed, "sources": statuses, "items": selected}
