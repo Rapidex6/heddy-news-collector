@@ -21,6 +21,7 @@ from html.parser import HTMLParser
 from html import unescape
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from media import enrich_media, valid_image
 
 PARIS = ZoneInfo("Europe/Paris")
 UTC = timezone.utc
@@ -256,6 +257,8 @@ def validate_feed(feed, language):
         for name in ["retrievedAt", "updatedAt"]:
             if item.get(name) and not parse_date(item[name])[0]:
                 raise ValueError("Invalid item timestamp")
+        if item.get('image') is not None and not valid_image(item['image'],item['sourceId']):
+            raise ValueError('Unsafe article image')
         if not item["url"].startswith("https://") or not item["licenseUrl"].startswith("https://"):
             raise ValueError("Unsafe item URL")
     return feed
@@ -313,7 +316,8 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
         feed["items"].pop()
     validate_feed(feed, language)
     state = {"schemaVersion": 1, "language": language, "lastSuccessfulRefreshAt": refreshed,
-             "sourceState": states, "history": retained, "feed": feed}
+             "sourceState": states, "history": retained, "feed": feed,
+             "mediaState": previous.get('mediaState',{})}
     return state
 
 
@@ -341,6 +345,10 @@ def main():
                 state.pop("lastModified", None)
         sources = [s for s in registry["sources"] if s["language"] == language]
         result = collect_language(sources, language, previous, now)
+        result = enrich_media(result,sources,now)
+        while len(compact_json(result['feed']))>FEED_BUDGET and result['feed']['items']:
+            result['feed']['items'].pop()
+        validate_feed(result['feed'],language)
         atomic_write(state_path, result)
         atomic_write(args.output / f"news-feed.{language}.json", result["feed"])
         print(json.dumps({"language": language, "items": len(result["feed"]["items"]),

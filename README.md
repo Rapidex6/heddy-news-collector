@@ -16,7 +16,16 @@ entries with explicit CC BY-SA 4.0 rights; its excerpt is an original paragraph.
 arXiv abstracts are identified as research preprints, with all authors and its
 required acknowledgement. All public entries carry source, publication date,
 retrieval date, applicable reuse terms, attribution and the original HTTPS link.
-Only text metadata is collected; no linked article page or media is downloaded.
+Images are optional remote URLs, never downloaded or stored as files. The
+collector reads bounded article HTML only for Eurostat-owned statistical charts
+and CNIL-owned illustrations, from reviewed publisher hosts and paths. Stock
+photographs, third-party illustrations and arXiv pages/PDFs are excluded.
+Eurostat charts retain CC BY 4.0 attribution. CNIL illustrations retain
+CC BY-NC-ND 4.0 attribution and must be displayed whole, without cropping or
+alteration, on this personal, noncommercial site. Detailed attribution and
+licence links remain available in the website's global Sources disclosure.
+CNIL filenames are explicitly reviewed in `media.py`; unreviewed or third-party
+artwork hosted on the same site is excluded. Future images need that review.
 
 ## Runtime
 
@@ -35,6 +44,11 @@ before its request. Other sources use ETag/Last-Modified when supplied. Valid em
 feeds preserve history; partial failures retain other sources; total outages retain
 the last useful public JSON. History is bounded to eight Paris dates and 120 entries
 per source, independently of public caps. Missing publication dates are excluded.
+
+Image metadata is cached in the language state for 24 hours, including a missing
+image result. At most six article pages per language are checked in one run,
+with a one-megabyte HTML limit and ten-second timeout. Failures preserve a
+previously validated image. A total feed outage triggers no image lookups.
 
 ## Durable history and publication
 
