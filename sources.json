@@ -1,0 +1,160 @@
+{
+  "timeZone": "Europe/Paris",
+  "sources": [
+    {
+      "id": "insee",
+      "name": "Insee",
+      "language": "fr",
+      "feedUrl": "https://www.insee.fr/fr/flux/2",
+      "type": "statistique_publique",
+      "topics": [
+        "economie"
+      ],
+      "licence": "Licence Ouverte Etalab 2.0",
+      "policyUrl": "https://www.insee.fr/fr/information/2008466",
+      "attribution": "Source : Insee ; URL originale et date de mise à jour connue ; ne pas utiliser le logo.",
+      "licenseUrl": "https://www.insee.fr/fr/information/2008466",
+      "allowedHosts": [
+        "www.insee.fr",
+        "insee.fr"
+      ],
+      "maxItems": 10
+    },
+    {
+      "id": "cnil",
+      "name": "CNIL",
+      "language": "fr",
+      "feedUrl": "https://www.cnil.fr/fr/rss.xml",
+      "type": "autorite_publique",
+      "topics": [
+        "technologie"
+      ],
+      "licence": "CC BY-ND 4.0",
+      "policyUrl": "https://www.cnil.fr/fr/mentions-legales",
+      "attribution": "Titre ; Source : CNIL – https://www.cnil.fr ; date d'extraction ; lien vers la licence et l'original.",
+      "licenseUrl": "https://www.cnil.fr/fr/mentions-legales",
+      "allowedHosts": [
+        "www.cnil.fr",
+        "cnil.fr"
+      ],
+      "maxItems": 10
+    },
+    {
+      "id": "economie",
+      "name": "Économie.gouv.fr",
+      "language": "fr",
+      "feedUrl": "https://www.economie.gouv.fr/rss/toutesactualites",
+      "type": "communication_institutionnelle",
+      "topics": [
+        "economie"
+      ],
+      "licence": "Licence Ouverte Etalab 2.0 / conditions RSS",
+      "policyUrl": "https://www.economie.gouv.fr/rss",
+      "attribution": "Source : Ministères économiques et financiers – economie.gouv.fr ; lien original et date.",
+      "licenseUrl": "https://www.economie.gouv.fr/rss",
+      "allowedHosts": [
+        "www.economie.gouv.fr",
+        "economie.gouv.fr"
+      ],
+      "maxItems": 10
+    },
+    {
+      "id": "eurostat-en",
+      "name": "Eurostat",
+      "language": "en",
+      "feedUrl": "https://ec.europa.eu/eurostat/en/search?p_p_id=estatsearchportlet_WAR_estatsearchportlet&p_p_lifecycle=2&p_p_state=maximized&p_p_mode=view&p_p_resource_id=atom&_estatsearchportlet_WAR_estatsearchportlet_theme=PER_ECOFIN&_estatsearchportlet_WAR_estatsearchportlet_collection=CAT_EURNEW",
+      "type": "statistique_publique",
+      "topics": [
+        "economie"
+      ],
+      "licence": "CC BY 4.0 (EU-owned editorial content)",
+      "policyUrl": "https://ec.europa.eu/eurostat/help/copyright-notice",
+      "attribution": "Eurostat / European Union. Original title, author and publication date; text presentation only.",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "allowedHosts": [
+        "ec.europa.eu"
+      ],
+      "maxItems": 10
+    },
+    {
+      "id": "nist-en",
+      "name": "NIST News",
+      "language": "en",
+      "feedUrl": "https://www.nist.gov/news-events/news/rss.xml",
+      "type": "organisme_recherche",
+      "topics": [
+        "technologie",
+        "sciences"
+      ],
+      "licence": "Public information reuse permission (NIST)",
+      "policyUrl": "https://www.nist.gov/copyrights-disclaimers",
+      "attribution": "NIST. Original title, supplied author(s) and publication date.",
+      "licenseUrl": "https://www.nist.gov/copyrights-disclaimers",
+      "allowedHosts": [
+        "www.nist.gov",
+        "nist.gov"
+      ],
+      "maxItems": 10
+    },
+    {
+      "id": "nsf-en",
+      "name": "U.S. National Science Foundation",
+      "language": "en",
+      "feedUrl": "https://www.nsf.gov/rss/rss_www_news.xml",
+      "type": "organisme_recherche",
+      "topics": [
+        "sciences",
+        "technologie"
+      ],
+      "licence": "Public text reuse permission (NSF)",
+      "policyUrl": "https://www.nsf.gov/policies/digital",
+      "attribution": "Courtesy: U.S. National Science Foundation.",
+      "licenseUrl": "https://www.nsf.gov/policies/digital",
+      "allowedHosts": [
+        "www.nsf.gov",
+        "nsf.gov"
+      ],
+      "maxItems": 10
+    },
+    {
+      "id": "linuxfr-ai-fr",
+      "name": "LinuxFr.org — Intelligence artificielle",
+      "language": "fr",
+      "feedUrl": "https://linuxfr.org/tags/intelligence_artificielle/public.atom",
+      "type": "publication_communautaire",
+      "topics": [
+        "intelligence_artificielle",
+        "technologie"
+      ],
+      "licence": "CC BY-SA 4.0",
+      "policyUrl": "https://linuxfr.org/aide",
+      "attribution": "Auteur/pseudonyme, LinuxFr.org, titre, URL originale et CC BY-SA 4.0 ; conserver les mentions et indiquer le prélèvement d’un extrait.",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "allowedHosts": [
+        "linuxfr.org"
+      ],
+      "maxItems": 3
+    },
+    {
+      "id": "arxiv-ai-en",
+      "name": "arXiv — Artificial Intelligence (cs.AI)",
+      "language": "en",
+      "feedUrl": "https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=5&sortBy=submittedDate&sortOrder=descending",
+      "type": "prepublication_scientifique",
+      "topics": [
+        "intelligence_artificielle",
+        "sciences",
+        "technologie"
+      ],
+      "licence": "CC0 1.0 (descriptive metadata)",
+      "policyUrl": "https://info.arxiv.org/help/api/tou.html",
+      "attribution": "Thank you to arXiv for use of its open access interoperability.",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "allowedHosts": [
+        "arxiv.org",
+        "export.arxiv.org"
+      ],
+      "maxItems": 5
+    }
+  ]
+}

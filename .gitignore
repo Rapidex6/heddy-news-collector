@@ -1,0 +1,8 @@
+.state/
+.venv/
+output/
+__pycache__/
+*.pyc
+.env
+*.pem
+*.key
