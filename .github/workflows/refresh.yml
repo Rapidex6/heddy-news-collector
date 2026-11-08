@@ -34,7 +34,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.verify_sftp
         run: |
           python - <<'PY'
-          import os, posixpath
+          import json, os, posixpath, stat
           from sftp_publish import connect
           client = connect()
           try:
@@ -44,6 +44,26 @@ jobs:
                       raise ValueError('Unexpected website directory')
                   sftp.stat(root)
                   print('Verified OVH SFTP login and www directory; no files changed.')
+                  counts = {'files': 0, 'directories': 0, 'symlinks': 0, 'other': 0, 'bytes': 0}
+                  pending = [root]
+                  while pending:
+                      directory = pending.pop()
+                      for entry in sftp.listdir_attr(directory):
+                          if entry.filename in {'.', '..'}:
+                              continue
+                          if stat.S_ISDIR(entry.st_mode):
+                              counts['directories'] += 1
+                              pending.append(posixpath.join(directory, entry.filename))
+                          elif stat.S_ISREG(entry.st_mode):
+                              counts['files'] += 1
+                              counts['bytes'] += entry.st_size
+                          elif stat.S_ISLNK(entry.st_mode):
+                              counts['symlinks'] += 1
+                          else:
+                              counts['other'] += 1
+                          if sum(counts[key] for key in ('files', 'directories', 'symlinks', 'other')) > 10000:
+                              raise ValueError('Website inventory exceeds the diagnostic limit')
+                  print('Website root inventory (names omitted): ' + json.dumps(counts))
           finally:
               client.close()
           PY
