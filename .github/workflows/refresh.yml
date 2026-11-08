@@ -8,6 +8,10 @@ on:
         description: 'Publish the two JSON feeds to OVH (enable only after the complete website is live)'
         type: boolean
         default: false
+      verify_sftp:
+        description: 'Verify OVH SFTP login and directory without changing files'
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -26,6 +30,30 @@ jobs:
           python-version: '3.13.18'
       - run: python -m pip install --require-hashes -r requirements.lock
       - run: python -m unittest discover -v
+      - name: Verify SFTP access without publication
+        if: github.event_name == 'workflow_dispatch' && inputs.verify_sftp
+        run: |
+          python - <<'PY'
+          import os, posixpath
+          from sftp_publish import connect
+          client = connect()
+          try:
+              with client.open_sftp() as sftp:
+                  root = sftp.normalize(os.environ['NEWS_SFTP_ROOT'])
+                  if posixpath.basename(root) != 'www':
+                      raise ValueError('Unexpected website directory')
+                  sftp.stat(root)
+                  print('Verified OVH SFTP login and www directory; no files changed.')
+          finally:
+              client.close()
+          PY
+        env:
+          NEWS_SFTP_HOST: ${{ vars.NEWS_SFTP_HOST }}
+          NEWS_SFTP_PORT: ${{ vars.NEWS_SFTP_PORT }}
+          NEWS_SFTP_USER: ${{ vars.NEWS_SFTP_USER }}
+          NEWS_SFTP_ROOT: ${{ vars.NEWS_SFTP_ROOT }}
+          NEWS_SFTP_HOST_FINGERPRINT: ${{ vars.NEWS_SFTP_HOST_FINGERPRINT }}
+          NEWS_SFTP_PASSWORD: ${{ secrets.NEWS_SFTP_PASSWORD }}
       - name: Restore durable history
         run: python github_state.py pull
         env:
