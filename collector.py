@@ -29,6 +29,7 @@ UTC = timezone.utc
 MAX_BYTES = 2_000_000
 FEED_BUDGET = 200_000
 MAX_ITEMS = 60
+PARSER_VERSION = 2
 TIMEOUT = 25
 USER_AGENT = "HeddyNewsCollector/1.0 (+https://heddy.fr/news; contact@heddy.fr)"
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
@@ -115,8 +116,9 @@ def parse_date(value):
 
 
 def publication_day(item):
-    if item.get("publishedAt"):
-        return datetime.fromisoformat(item["publishedAt"].replace("Z", "+00:00")).astimezone(PARIS).date()
+    timestamp=item.get('publishedAt') or item.get('feedDateAt')
+    if timestamp:
+        return datetime.fromisoformat(timestamp.replace("Z", "+00:00")).astimezone(PARIS).date()
     if item.get("publishedDate"):
         return datetime.strptime(item["publishedDate"], "%Y-%m-%d").date()
     return None
@@ -127,7 +129,8 @@ def in_window(item, now):
     today = now.astimezone(PARIS).date()
     if day is None or not today - timedelta(days=7) <= day <= today:
         return False
-    return not item.get("publishedAt") or datetime.fromisoformat(item["publishedAt"].replace("Z", "+00:00")) <= now
+    timestamp=item.get('publishedAt') or item.get('feedDateAt')
+    return not timestamp or datetime.fromisoformat(timestamp.replace("Z", "+00:00")) <= now
 
 
 def canonical_url(value, source):
@@ -200,6 +203,9 @@ def parse_feed(data, source, now):
                 "summary": summary, "summaryKind": summary_kind, "authors": authors,
                 "licenseName": source.get("licence"), "licenseUrl": source.get("licenseUrl"),
                 "attribution": source["attribution"], "language": source["language"], "contentKind": kind}
+        # Atom requires updated, while published is optional. Keep the fallback
+        # separate so the UI identifies it as an update, not a first publication.
+        if atom and not published and not published_date and updated and source['id']!='arxiv-ai-en':item['feedDateAt']=updated
         if in_window(item, now):
             categories=' '.join(plain(e.get('term') or ''.join(e.itertext())) for e in children(entry,'category'))
             text=title+' '+categories
@@ -254,13 +260,13 @@ def validate_feed(feed, language):
         ids.add(item["id"])
         if not isinstance(item.get("authors"), list) or not all(isinstance(a, str) for a in item["authors"]):
             raise ValueError("Invalid authors")
-        if not item.get("publishedAt") and not item.get("publishedDate"):
+        if not item.get("publishedAt") and not item.get("publishedDate") and not item.get('feedDateAt'):
             raise ValueError("Missing publication date")
         if item.get("publishedAt") and not parse_date(item["publishedAt"])[0]:
             raise ValueError("Invalid publication date")
         if item.get("publishedDate") and not parse_date(item["publishedDate"])[1]:
             raise ValueError("Invalid publication day")
-        for name in ["retrievedAt", "updatedAt"]:
+        for name in ["retrievedAt", "updatedAt", "feedDateAt"]:
             if item.get(name) and not parse_date(item[name])[0]:
                 raise ValueError("Invalid item timestamp")
         if item.get('image') is not None and not valid_image(item['image'],item['sourceId']):
@@ -304,7 +310,7 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
             status = "stale" if prior.get("lastSuccessAt") else "unavailable"
         states[source["id"]] = current
         relevant = [item for item in history.values() if item["sourceId"] == source["id"]]
-        newest = max((item["publishedAt"] or item["publishedDate"] for item in relevant), default=None)
+        newest = max((item['publishedAt'] or item['publishedDate'] for item in relevant if item['publishedAt'] or item['publishedDate']), default=None)
         statuses.append({"id": source["id"], "name": source["name"], "type": source["type"],
                          "status": status, "lastSuccessAt": current.get("lastSuccessAt"),
                          "newestPublicationAt": newest, "licenseName": source["licence"],
@@ -312,7 +318,7 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
                          **{key:source[key] for key in ['home','logo','initials','shortName','allowedHosts','mediaHosts'] if key in source}})
     active = {s["id"]: s for s in sources}
     unique, buckets, selected = set(), {}, []
-    ordered = sorted(history.values(), key=lambda i: (i.get("publishedAt") or i.get("publishedDate") or "", i.get("updatedAt") or "", i.get("retrievedAt") or "", i["id"]), reverse=True)
+    ordered = sorted(history.values(), key=lambda i: (i.get("publishedAt") or i.get('feedDateAt') or i.get("publishedDate") or "", i.get("updatedAt") or "", i.get("retrievedAt") or "", i["id"]), reverse=True)
     retained = []
     for item in ordered:
         source_id = item["sourceId"]
@@ -340,7 +346,7 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
     while len(compact_json(feed)) > FEED_BUDGET and feed["items"]:
         feed["items"].pop()
     validate_feed(feed, language)
-    state = {"schemaVersion": 1, "language": language, "lastSuccessfulRefreshAt": refreshed,
+    state = {"schemaVersion": 1, "parserVersion":PARSER_VERSION, "language": language, "lastSuccessfulRefreshAt": refreshed,
              "sourceState": states, "history": retained, "feed": feed,
              "mediaState": previous.get('mediaState',{})}
     return state
@@ -364,7 +370,7 @@ def main():
     for language in ("fr", "en"):
         state_path = args.state / f"{language}.json"
         previous = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
-        if args.force:
+        if args.force or previous.get('parserVersion')!=PARSER_VERSION:
             for state in previous.get("sourceState", {}).values():
                 state.pop("etag", None)
                 state.pop("lastModified", None)

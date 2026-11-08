@@ -46,6 +46,12 @@ class CollectorTests(unittest.TestCase):
         data = b'<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>x</id><title>Undated</title><link href="https://arxiv.org/abs/2611.12345"/><updated>2026-11-08T01:00:00Z</updated></entry></feed>'
         self.assertEqual(parse_feed(data, source('arxiv-ai-en'), NOW), [])
 
+    def test_atom_updated_only_has_an_explicit_feed_date(self):
+        data=b'<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>x</id><title>News</title><link href="https://www.lesnumeriques.com/news.html"/><updated>2026-11-08T00:00:00Z</updated></entry></feed>'
+        item=parse_feed(data,source('lesnumeriques'),NOW)[0]
+        self.assertIsNone(item['publishedAt']);self.assertEqual(item['feedDateAt'],'2026-11-08T00:00:00Z')
+        self.assertTrue(in_window(item,NOW))
+
     def test_ministry_local_zone_and_duplicate_author(self):
         data = rss('<item><title>Publication</title><author>Publication</author><link>https://www.economie.gouv.fr/test</link><pubDate>2026-11-06 12:00:00</pubDate></item>')
         item = parse_feed(data, source('economie'), NOW)[0]

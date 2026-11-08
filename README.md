@@ -39,7 +39,9 @@ Outputs are output/news-feed.fr.json and output/news-feed.en.json.
 Each JSON has at most 60 entries and 200,000 UTF-8 bytes, from today and the
 previous seven civil days in Europe/Paris. Publication, update, retrieval and
 successful-refresh timestamps stay distinct. Missing publication dates and future
-entries are excluded. Dates without an offset use Paris; nonexistent DST times
+entries are excluded. Atom feeds with only an updated timestamp use a separate
+feedDateAt field, displayed explicitly as an update; research preprints still
+require their publication date. Dates without an offset use Paris; nonexistent DST times
 are rejected.
 
 Selection reserves a place for each source before filling the remaining slots,
@@ -76,3 +78,6 @@ published with a temporary sibling plus atomic POSIX rename. Failed renames
 preserve the previous file. Website deployments preserve existing runtime feeds.
 Deploy a compatible frontend before publishing an expanded source selection.
 The full site must remain below 100,000,000 bytes.
+
+Parser revisions invalidate conditional feed validators once, so newly supported
+entry formats are backfilled even if the publisher returns unchanged content.
