@@ -1,0 +1,48 @@
+name: Refresh news
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish the two JSON feeds to OVH (enable only after the complete website is live)'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: news-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13.18'
+      - run: python -m pip install --require-hashes -r requirements.lock
+      - run: python -m unittest discover -v
+      - name: Restore durable history
+        run: python github_state.py pull
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Collect and validate both selections
+        run: python collector.py
+      - name: Save durable per-language history
+        run: python github_state.py push
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Publish only the validated JSON feeds
+        if: vars.NEWS_PUBLISH_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.publish)
+        run: python sftp_publish.py
+        env:
+          NEWS_SFTP_HOST: ${{ vars.NEWS_SFTP_HOST }}
+          NEWS_SFTP_PORT: ${{ vars.NEWS_SFTP_PORT }}
+          NEWS_SFTP_USER: ${{ vars.NEWS_SFTP_USER }}
+          NEWS_SFTP_ROOT: ${{ vars.NEWS_SFTP_ROOT }}
+          NEWS_SFTP_HOST_FINGERPRINT: ${{ vars.NEWS_SFTP_HOST_FINGERPRINT }}
+          NEWS_SFTP_PASSWORD: ${{ secrets.NEWS_SFTP_PASSWORD }}
