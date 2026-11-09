@@ -13,6 +13,14 @@ ScienceAlert, Live Science, BBC Business, The Guardian Business, NASA and
 The Decoder. Availability and directly loadable publisher images determine new
 source selection; licence text is not an inclusion/exclusion filter.
 
+The selection is editorial news, not a shopping feed. Publisher shopping/deal
+sections and categories, buying guides, promotional codes, campaign product
+prices and discount headlines are excluded in French and English. Price-bearing
+product announcements, research, financial reporting and economic coverage of
+shopping events remain eligible. Filtering applies to both new entries and
+retained history, including 304 responses and total-outage fallbacks. Outgoing
+JSON validation also rejects a detected offer.
+
 Titles and publisher excerpts remain in their original language. Full article
 bodies are not republished. Authors, dates, publisher names and original article
 links remain available. arXiv entries are marked as research preprints; its

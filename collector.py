@@ -23,13 +23,14 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
 from media import enrich_media, valid_image, feed_image
+from editorial import is_promotion
 
 PARIS = ZoneInfo("Europe/Paris")
 UTC = timezone.utc
 MAX_BYTES = 2_000_000
 FEED_BUDGET = 200_000
 MAX_ITEMS = 60
-PARSER_VERSION = 2
+PARSER_VERSION = 3
 TIMEOUT = 25
 USER_AGENT = "HeddyNewsCollector/1.0 (+https://heddy.fr/news; contact@heddy.fr)"
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
@@ -145,7 +146,7 @@ def canonical_url(value, source):
         return None
 
 
-def parse_feed(data, source, now):
+def parse_feed(data, source, now, include_commercial=False):
     if len(data) > MAX_BYTES or re.search(br"<!\s*(?:DOCTYPE|ENTITY)\b", data, re.I):
         raise ValueError("Unsafe or oversized XML")
     root = ET.fromstring(data)
@@ -207,7 +208,9 @@ def parse_feed(data, source, now):
         # separate so the UI identifies it as an update, not a first publication.
         if atom and not published and not published_date and updated and source['id']!='arxiv-ai-en':item['feedDateAt']=updated
         if in_window(item, now):
-            categories=' '.join(plain(e.get('term') or ''.join(e.itertext())) for e in children(entry,'category'))
+            item['categories']=list(dict.fromkeys(plain(e.get('term') or ''.join(e.itertext()))[:120] for e in children(entry,'category')))[:20]
+            if not include_commercial and is_promotion(item):continue
+            categories=' '.join(item['categories'])
             text=title+' '+categories
             if re.search(r'\b(?:IA|AI|LLMs?)\b',text) or re.search(r'intelligence artificielle|artificial intelligence|openai|chatgpt|anthropic|claude|machine learning|deep learning',text,re.I):
                 item['topics']=list(dict.fromkeys(item['topics']+['intelligence_artificielle','technologie']))
@@ -253,6 +256,7 @@ def validate_feed(feed, language):
         raise ValueError("Feed budget exceeded")
     ids = set()
     for item in feed["items"]:
+        if is_promotion(item):raise ValueError('Commercial offer in news feed')
         if item.get("language") != language or item["sourceId"] not in {s["id"] for s in feed["sources"]}:
             raise ValueError("Mixed language or unknown source")
         if not isinstance(item.get("id"), str) or item["id"] in ids or not isinstance(item.get("title"), str):
@@ -278,7 +282,7 @@ def validate_feed(feed, language):
 
 def collect_language(sources, language, previous, now, fetch=fetch_feed):
     previous_sources = previous.get("sourceState", {})
-    history = {item["id"]: item for item in previous.get("history", []) if in_window(item, now)}
+    history = {item["id"]: item for item in previous.get("history", []) if in_window(item, now) and not is_promotion(item)}
     states, statuses, successes = {}, [], 0
     def outcome(source):
         try:
@@ -297,11 +301,12 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
         try:
             data, headers, error = fetched[source['id']]
             if error:raise error
-            entries = parse_feed(data, source, now) if data is not None else []
+            entries = parse_feed(data, source, now, include_commercial=True) if data is not None else []
             if data is None and not prior.get("lastSuccessAt"):
                 raise ValueError("304 without a prior valid result")
             for item in entries:
-                history[item["id"]] = item
+                if is_promotion(item):history.pop(item['id'],None)
+                else:history[item["id"]] = item
             current = {**prior, **headers, "lastSuccessAt": stamp(now)}
             status, successes = "ok", successes + 1
         except (OSError, ValueError, ET.ParseError, urllib.error.URLError, socket.timeout) as error:
@@ -343,6 +348,8 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
     if not successes and previous.get("feed"):
         # A complete outage never overwrites the last useful public file.
         feed = previous["feed"]
+        clean=[item for item in feed['items'] if not is_promotion(item)]
+        if len(clean)!=len(feed['items']):feed={**feed,'items':clean}
     while len(compact_json(feed)) > FEED_BUDGET and feed["items"]:
         feed["items"].pop()
     validate_feed(feed, language)

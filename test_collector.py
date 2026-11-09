@@ -116,6 +116,33 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(second['lastSuccessfulRefreshAt'], first['lastSuccessfulRefreshAt'])
         self.assertEqual(second['sourceState']['insee']['lastError'], 'OSError')
 
+    def promotion_in_history(self):
+        previous=self.initial()
+        promo=copy.deepcopy(previous['history'][0]);promo.update(id='insee:cached-promo',title='Black Friday : un smartphone à 499 € (-30%)',url='https://www.insee.fr/fr/statistiques/cached-promo')
+        previous['history'].append(promo);previous['feed']['items'].append(promo)
+        return previous
+
+    def test_cached_promotions_are_purged_even_on_304(self):
+        previous=self.promotion_in_history()
+        current=collect_language([source()],'fr',previous,NOW+timedelta(hours=1),lambda s,p:(None,{}))
+        self.assertEqual(len(current['feed']['items']),1)
+        self.assertEqual(len(current['history']),1)
+        self.assertEqual(len(previous['feed']['items']),2,'Do not mutate the prior snapshot')
+
+    def test_complete_outage_cannot_restore_a_cached_promotion(self):
+        previous=self.promotion_in_history()
+        def failed(s,p):raise OSError('unavailable')
+        current=collect_language([source()],'fr',previous,NOW+timedelta(hours=1),failed)
+        self.assertEqual(len(current['feed']['items']),1)
+        self.assertEqual(current['lastSuccessfulRefreshAt'],previous['lastSuccessfulRefreshAt'])
+
+    def test_new_commercial_category_removes_the_old_cached_item(self):
+        previous=self.initial()
+        revised=rss(rss_item().replace('</item>','<category>Bons Plans</category></item>'))
+        current=collect_language([source()],'fr',previous,NOW+timedelta(hours=1),lambda s,p:(revised,{}))
+        self.assertEqual(current['feed']['items'],[])
+        self.assertEqual(current['history'],[])
+
     def test_partial_failure_does_not_discard_healthy_source(self):
         def fetch(s, p):
             if s['id'] == 'cnil':
