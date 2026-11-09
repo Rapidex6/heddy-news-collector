@@ -12,7 +12,7 @@ import time
 from sftp_publish import connect
 
 
-MAX_BATCHES = 70
+MAX_BATCHES = 210
 MAX_RESPONSE = 4096
 
 

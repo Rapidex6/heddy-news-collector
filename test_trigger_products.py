@@ -116,8 +116,8 @@ class TriggerTests(unittest.TestCase):
         self.connection.getresponse.return_value = self.response(b'{"ok":true,"more":true}')
         with self.assertRaisesRegex(trigger.TriggerError, "batch limit"):
             trigger.run()
-        self.assertEqual(70, self.connection.request.call_count)
-        self.assertEqual(69, self.sleep.call_count)
+        self.assertEqual(210, self.connection.request.call_count)
+        self.assertEqual(209, self.sleep.call_count)
 
     def test_failure_output_has_no_sensitive_errors(self):
         with contextlib.redirect_stderr(io.StringIO()) as err:
