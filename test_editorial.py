@@ -30,6 +30,10 @@ class EditorialTests(unittest.TestCase):
                       'Vente flash : un ordinateur à prix cassé',
                       'This laptop is $500 with 25% off',
                       'Save $100 on these headphones',
+                      'Le Google Pixel passe sous les 700 euros',
+                      'These headphones are now only $99',
+                      'Actualité : Cette table de cuisson présente le meilleur rapport qualité / prix de notre comparatif',
+                      'The best laptops you can buy in 2026',
                       'Try this VPN with a free trial']:
             with self.subTest(title=title):self.assertTrue(is_promotion(article(title)))
 

@@ -25,6 +25,8 @@ EDITORIAL=re.compile(r'\b(?:chiffre d.affaires|benefices?|revenus?|bourse|inflat
 DIRECT_OFFER=re.compile(r'\b(?:bons? plans?|codes? promo|coupons?|cashback|ventes? flash|essai gratuit|free trial|offre de bienvenue|welcome offer|prix (?:casse|brade|sacrifie|imbattable)|meilleur prix|best price|lowest (?:ever )?price|record low price)\b')
 OFFER_WORDS=re.compile(r'\b(?:deals?|discounts?|remises?|reductions?|promos?|promotions?|offres?|acheter|buying guide|sale|off)\b')
 CALL_TO_BUY=re.compile(r'\b(?:economisez|profitez|ne ratez pas|a saisir|save|grab|snag)\b')
+BUYING_PICK=re.compile(r'\b(?:meilleur rapport qualite\s*/?\s*prix|best (?:[\w-]+ ){0,5}(?:to buy|you can buy))\b')
+PRICE_DROP=re.compile(r'\b(?:passe (?:sous|a)|tombe a|chute a|descend (?:sous|a)|desormais a|now (?:only|just)|on sale for|down to)\b')
 
 
 def is_promotion(item):
@@ -43,8 +45,10 @@ def is_promotion(item):
     # News about retail, earnings, fraud or shopping events is still news.
     if EDITORIAL.search(title):return False
     if DIRECT_OFFER.search(title):return True
+    if BUYING_PICK.search(title):return True
     if re.search(r'^(?:actualite\s*:\s*)?(?:promo|promotion|deal|sponsored|sponsorise)\s*[:\[–-]',title):return True
     priced=bool(PRICE.search(title));discounted=bool(DISCOUNT.search(title))
+    if priced and PRICE_DROP.search(title):return True
     if CAMPAIGN.search(title) and (priced or discounted or OFFER_WORDS.search(title)):return True
     if discounted and (priced or OFFER_WORDS.search(title)):return True
     return bool(CALL_TO_BUY.search(title) and (priced or discounted))
