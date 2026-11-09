@@ -79,7 +79,7 @@ class TriggerTests(unittest.TestCase):
         self.assertEqual(2, self.connection.close.call_count)
         for call in self.https.call_args_list:
             self.assertEqual(("heddy.fr",), call.args)
-            self.assertEqual(35, call.kwargs["timeout"])
+            self.assertEqual(60, call.kwargs["timeout"])
             self.assertTrue(call.kwargs["context"].check_hostname)
             self.assertEqual(ssl.CERT_REQUIRED, call.kwargs["context"].verify_mode)
         for call in self.connection.request.call_args_list:

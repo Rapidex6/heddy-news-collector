@@ -46,7 +46,7 @@ def read_scheduler_key():
 
 
 def request_batch(key):
-    connection = http.client.HTTPSConnection("heddy.fr", timeout=35, context=ssl.create_default_context())
+    connection = http.client.HTTPSConnection("heddy.fr", timeout=60, context=ssl.create_default_context())
     try:
         # HTTPSConnection does not follow redirects. The credential stays on this origin.
         connection.request("POST", "/private/sync.php", b"{}", headers={
