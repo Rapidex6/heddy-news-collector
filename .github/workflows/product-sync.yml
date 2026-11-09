@@ -1,0 +1,32 @@
+name: Refresh private products
+on:
+  schedule:
+    - cron: '37 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: private-products
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --require-hashes -r requirements.lock
+      - run: python -m unittest -v test_trigger_products
+      - name: Trigger private updater
+        run: python trigger_products.py
+        env:
+          NEWS_SFTP_HOST: ${{ vars.NEWS_SFTP_HOST }}
+          NEWS_SFTP_PORT: ${{ vars.NEWS_SFTP_PORT }}
+          NEWS_SFTP_USER: ${{ vars.NEWS_SFTP_USER }}
+          NEWS_SFTP_ROOT: ${{ vars.NEWS_SFTP_ROOT }}
+          NEWS_SFTP_HOST_FINGERPRINT: ${{ vars.NEWS_SFTP_HOST_FINGERPRINT }}
+          NEWS_SFTP_PASSWORD: ${{ secrets.NEWS_SFTP_PASSWORD }}
