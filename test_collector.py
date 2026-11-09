@@ -143,6 +143,47 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(current['feed']['items'],[])
         self.assertEqual(current['history'],[])
 
+    def test_cached_politics_is_removed_on_304_and_during_complete_outage(self):
+        previous=self.initial()
+        political=copy.deepcopy(previous['history'][0]);political.update(id='insee:political',title='Trump présente son programme économique')
+        previous['history'].append(political);previous['feed']['items'].append(political)
+        def failed(s,p):raise OSError('unavailable')
+        for fetch in [lambda s,p:(None,{}),failed]:
+            with self.subTest(outage=fetch is failed):
+                current=collect_language([source()],'fr',previous,NOW+timedelta(hours=1),fetch)
+                self.assertEqual([x['id'] for x in current['feed']['items']],[previous['history'][0]['id']])
+                self.assertEqual(len(current['history']),1)
+                self.assertEqual(len(previous['feed']['items']),2)
+
+    def test_new_political_category_purges_previous_opaque_article(self):
+        previous=self.initial()
+        revised=rss(rss_item().replace('</item>','<category>Politics</category></item>'))
+        current=collect_language([source()],'fr',previous,NOW+timedelta(hours=1),lambda s,p:(revised,{}))
+        self.assertEqual(current['feed']['items'],[])
+        self.assertEqual(current['history'],[])
+
+    def test_removed_publisher_is_purged_from_history_and_outage_metadata(self):
+        previous=self.initial()
+        retired=copy.deepcopy(previous['history'][0]);retired.update(id='retired:article',sourceId='retired',sourceName='Old publisher')
+        previous['history'].append(retired);previous['feed']['items'].append(retired)
+        previous['feed']['sources'].append({'id':'retired','name':'Old publisher'})
+        def failed(s,p):raise OSError('unavailable')
+        current=collect_language([source()],'fr',previous,NOW+timedelta(hours=1),failed)
+        self.assertEqual(len(current['feed']['items']),1)
+        self.assertEqual(len(current['history']),1)
+        self.assertEqual([x['id'] for x in current['feed']['sources']],['insee'])
+        self.assertEqual(current['lastSuccessfulRefreshAt'],previous['lastSuccessfulRefreshAt'])
+        self.assertEqual(len(previous['feed']['sources']),2)
+
+    def test_bfm_is_never_fetched_and_cannot_appear_even_in_an_empty_feed(self):
+        blocked=source();blocked.update(id='bfm-business',name='BFM Business',feedUrl='https://www.bfmtv.com/rss/economie/')
+        def must_not_fetch(s,p):raise AssertionError('BFM must not be requested')
+        current=collect_language([blocked],'fr',{},NOW,must_not_fetch)
+        self.assertEqual(current['feed']['items'],[])
+        self.assertEqual(current['feed']['sources'],[])
+        invalid=copy.deepcopy(current['feed']);invalid['sources']=[{'id':'bfm-business','name':'BFM Business'}]
+        with self.assertRaises(ValueError):validate_feed(invalid,'fr')
+
     def test_partial_failure_does_not_discard_healthy_source(self):
         def fetch(s, p):
             if s['id'] == 'cnil':

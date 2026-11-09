@@ -1,5 +1,5 @@
 import unittest
-from editorial import is_promotion
+from editorial import is_blocked_source, is_excluded, is_political, is_promotion
 
 
 def article(title,url='https://publisher.example/news/story',categories=None,**extra):
@@ -7,6 +7,55 @@ def article(title,url='https://publisher.example/news/story',categories=None,**e
 
 
 class EditorialTests(unittest.TestCase):
+    def test_all_bfm_sources_are_blocked_by_brand_or_host(self):
+        for value in [{'id':'bfm-business'},{'name':'BFMTV'},{'sourceName':'BFM Tech'},
+                      {'url':'https://www.bfmtv.com/economie/a.html'},
+                      {'feedUrl':'https://tech.bfmtv.com/rss.xml'},
+                      {'home':'https://bfmbusiness.fr'},
+                      {'allowedHosts':['www.bfmtv.com']}]:
+            with self.subTest(value=value):self.assertTrue(is_blocked_source(value))
+        self.assertFalse(is_blocked_source({'name':'BBC Business','home':'https://www.bbc.com'}))
+
+    def test_political_sections_and_publisher_categories(self):
+        for item in [article('Une décision importante',url='https://publisher.example/politique/story'),
+                     article('New technology report',categories=['US midterm elections 2026']),
+                     article('AI chatbot complaints',categories=['AI','Politics','Business']),
+                     article('Un bilan économique',categories=['Politiques publiques'])]:
+            with self.subTest(item=item):self.assertTrue(is_political(item))
+
+    def test_political_and_mixed_topic_headlines_in_both_languages(self):
+        for title in ['Deux ans après le retour de Donald Trump au pouvoir, le bilan des climatologues',
+                      'Les ministères présents au Salon des maires',
+                      'Le Parlement vote une loi sur l’IA',
+                      'Le gouvernement prépare le budget de l’État',
+                      'Macron annonce de nouvelles mesures économiques',
+                      'US midterms vote puts AI datacentres in the spotlight',
+                      'Government considers banning under-16s from eBay',
+                      'Brexit border posts cost £100 million',
+                      'Nvidia launches investigation into CEO’s affair with suspected Chinese spy',
+                      'Nvidia enquête sur les liens de son dirigeant avec une espionne chinoise',
+                      'Ships near subsea cables amid Iran’s warnings to Trump']:
+            with self.subTest(title=title):self.assertTrue(is_political(article(title)))
+
+    def test_politics_only_in_publisher_excerpt_is_excluded(self):
+        self.assertTrue(is_political(article('Une nouvelle mission sur les data centers',
+            summary='Le Premier ministre a annoncé cette mission lors de sa campagne électorale.')))
+
+    def test_non_political_economics_science_and_technical_policies_remain(self):
+        for title in ['L’inflation baisse et les salaires augmentent',
+                      'Nvidia présente un nouveau processeur pour l’IA',
+                      'NASA announces a new space telescope',
+                      'Une étude observe un nouveau mécanisme biologique',
+                      'Apple modifie sa politique de confidentialité',
+                      'Une politique de sécurité pour les mots de passe',
+                      'OpenAI updates its privacy policy',
+                      'Le président de Nvidia présente ses résultats financiers']:
+            with self.subTest(title=title):self.assertFalse(is_political(article(title)))
+
+    def test_economy_label_cannot_override_politics_or_blocked_publisher(self):
+        self.assertTrue(is_excluded(article('Trump annonce une baisse des taxes',categories=['Economy'])))
+        self.assertTrue(is_excluded(article('Une découverte scientifique',sourceName='BFM Business')))
+
     def test_commercial_sections_and_encoded_paths(self):
         for path in ['/bons-plans/phone.html','/%62ons-plans/phone.html','/deals/phone',
                      '/shopping/phone','/guides-d-achat/best-tv','/buying-guides/tvs']:

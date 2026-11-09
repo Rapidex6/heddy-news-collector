@@ -23,14 +23,14 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
 from media import enrich_media, valid_image, feed_image
-from editorial import is_promotion
+from editorial import is_blocked_source, is_excluded
 
 PARIS = ZoneInfo("Europe/Paris")
 UTC = timezone.utc
 MAX_BYTES = 2_000_000
 FEED_BUDGET = 200_000
 MAX_ITEMS = 60
-PARSER_VERSION = 3
+PARSER_VERSION = 4
 TIMEOUT = 25
 USER_AGENT = "HeddyNewsCollector/1.0 (+https://heddy.fr/news; contact@heddy.fr)"
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
@@ -146,7 +146,7 @@ def canonical_url(value, source):
         return None
 
 
-def parse_feed(data, source, now, include_commercial=False):
+def parse_feed(data, source, now, include_excluded=False):
     if len(data) > MAX_BYTES or re.search(br"<!\s*(?:DOCTYPE|ENTITY)\b", data, re.I):
         raise ValueError("Unsafe or oversized XML")
     root = ET.fromstring(data)
@@ -209,7 +209,7 @@ def parse_feed(data, source, now, include_commercial=False):
         if atom and not published and not published_date and updated and source['id']!='arxiv-ai-en':item['feedDateAt']=updated
         if in_window(item, now):
             item['categories']=list(dict.fromkeys(plain(e.get('term') or ''.join(e.itertext()))[:120] for e in children(entry,'category')))[:20]
-            if not include_commercial and is_promotion(item):continue
+            if not include_excluded and is_excluded(item):continue
             categories=' '.join(item['categories'])
             text=title+' '+categories
             if re.search(r'\b(?:IA|AI|LLMs?)\b',text) or re.search(r'intelligence artificielle|artificial intelligence|openai|chatgpt|anthropic|claude|machine learning|deep learning',text,re.I):
@@ -254,9 +254,11 @@ def validate_feed(feed, language):
         raise ValueError("Invalid feed contract")
     if len(feed["items"]) > MAX_ITEMS or len(compact_json(feed)) > FEED_BUDGET:
         raise ValueError("Feed budget exceeded")
+    if any(is_blocked_source(source) for source in feed['sources']):
+        raise ValueError('Excluded publisher in news feed')
     ids = set()
     for item in feed["items"]:
-        if is_promotion(item):raise ValueError('Commercial offer in news feed')
+        if is_excluded(item):raise ValueError('Excluded editorial content in news feed')
         if item.get("language") != language or item["sourceId"] not in {s["id"] for s in feed["sources"]}:
             raise ValueError("Mixed language or unknown source")
         if not isinstance(item.get("id"), str) or item["id"] in ids or not isinstance(item.get("title"), str):
@@ -281,8 +283,12 @@ def validate_feed(feed, language):
 
 
 def collect_language(sources, language, previous, now, fetch=fetch_feed):
+    sources=[source for source in sources if not is_blocked_source(source)]
+    active_ids={source['id'] for source in sources}
     previous_sources = previous.get("sourceState", {})
-    history = {item["id"]: item for item in previous.get("history", []) if in_window(item, now) and not is_promotion(item)}
+    history = {item["id"]: item for item in previous.get("history", [])
+               if item['sourceId'] in active_ids and item.get('language')==language
+               and in_window(item, now) and not is_excluded(item)}
     states, statuses, successes = {}, [], 0
     def outcome(source):
         try:
@@ -301,11 +307,11 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
         try:
             data, headers, error = fetched[source['id']]
             if error:raise error
-            entries = parse_feed(data, source, now, include_commercial=True) if data is not None else []
+            entries = parse_feed(data, source, now, include_excluded=True) if data is not None else []
             if data is None and not prior.get("lastSuccessAt"):
                 raise ValueError("304 without a prior valid result")
             for item in entries:
-                if is_promotion(item):history.pop(item['id'],None)
+                if is_excluded(item):history.pop(item['id'],None)
                 else:history[item["id"]] = item
             current = {**prior, **headers, "lastSuccessAt": stamp(now)}
             status, successes = "ok", successes + 1
@@ -346,10 +352,14 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
     feed = {"schemaVersion": 1, "language": language, "timeZone": "Europe/Paris", "generatedAt": stamp(now),
             "lastSuccessfulRefreshAt": refreshed, "sources": statuses, "items": selected}
     if not successes and previous.get("feed"):
-        # A complete outage never overwrites the last useful public file.
+        # Preserve useful prior data during an outage while applying current
+        # editorial exclusions and source removals to that snapshot as well.
         feed = previous["feed"]
-        clean=[item for item in feed['items'] if not is_promotion(item)]
-        if len(clean)!=len(feed['items']):feed={**feed,'items':clean}
+        clean=[item for item in feed['items'] if item['sourceId'] in active_ids
+               and item.get('language')==language and not is_excluded(item)]
+        clean_sources=[source for source in feed['sources'] if source['id'] in active_ids and not is_blocked_source(source)]
+        if len(clean)!=len(feed['items']) or len(clean_sources)!=len(feed['sources']):
+            feed={**feed,'items':clean,'sources':clean_sources}
     while len(compact_json(feed)) > FEED_BUDGET and feed["items"]:
         feed["items"].pop()
     validate_feed(feed, language)

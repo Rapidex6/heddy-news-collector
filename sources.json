@@ -457,35 +457,6 @@
       "maxItems": 6
     },
     {
-      "id": "bfm-business",
-      "name": "BFM Business",
-      "shortName": "BFM Business",
-      "language": "fr",
-      "feedUrl": "https://www.bfmtv.com/rss/economie/",
-      "home": "https://www.bfmtv.com",
-      "logo": "https://www.bfmtv.com/assets/v29/images/BFM_BUSINESS_default_16x9.1fe02e665ff091273c91059447a69de8.jpg",
-      "initials": "BB",
-      "type": "presse",
-      "topics": [
-        "economie"
-      ],
-      "licence": null,
-      "licenseUrl": null,
-      "policyUrl": "https://www.bfmtv.com/rss/economie/",
-      "attribution": "Source: BFM Business. Original article linked.",
-      "allowedHosts": [
-        "www.bfmtv.com",
-        "bfmtv.com"
-      ],
-      "mediaHosts": [
-        "io-fsly-bfmtv.cdn.nextradiotv.com",
-        "www.bfmtv.com",
-        "bfmtv.com"
-      ],
-      "mediaMode": "feed",
-      "maxItems": 6
-    },
-    {
       "id": "bdm",
       "name": "BDM",
       "shortName": "BDM",

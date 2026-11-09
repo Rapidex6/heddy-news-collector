@@ -5,10 +5,10 @@ No website source, mascot, Studio/game assets, credentials, image files or PDFs.
 
 ## Sources and content
 
-The registry in sources.json contains 27 accessible RSS/Atom feeds, split into
-15 French and 12 English feeds. It combines the existing institutional sources
+The registry in sources.json contains 26 accessible RSS/Atom feeds, split into
+14 French and 12 English feeds. It combines the existing institutional sources
 with Numerama, Frandroid, 01net, Les Numériques, Futura, Sciences et Avenir,
-Le Monde economy/science, BFM Business, BDM, ActuIA, The Verge, Ars Technica,
+Le Monde economy/science, BDM, ActuIA, The Verge, Ars Technica,
 ScienceAlert, Live Science, BBC Business, The Guardian Business, NASA and
 The Decoder. Availability and directly loadable publisher images determine new
 source selection; licence text is not an inclusion/exclusion filter.
@@ -20,6 +20,16 @@ product announcements, research, financial reporting and economic coverage of
 shopping events remain eligible. Filtering applies to both new entries and
 retained history, including 304 responses and total-outage fallbacks. Outgoing
 JSON validation also rejects a detected offer.
+
+BFM is excluded entirely, including its Business feed and every bfmtv.com
+subdomain. The registry omits it, collection rejects the brand/hosts before
+requesting feeds, and output validation rejects blocked publisher metadata.
+Politics is excluded in both languages using publisher categories, URL sections,
+titles and excerpts. Mixed economy, science or AI coverage is also excluded when
+it concerns political figures, parties, elections, government or geopolitics.
+Non-political economic statistics, research and technical privacy policies stay
+eligible. Current exclusions apply to stored history and outage fallback;
+removed publishers also disappear from fallback source metadata.
 
 Titles and publisher excerpts remain in their original language. Full article
 bodies are not republished. Authors, dates, publisher names and original article

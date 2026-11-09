@@ -1,4 +1,4 @@
-"""Keep publisher news; exclude shopping offers and buying guides."""
+"""Keep non-political publisher news, excluding BFM and shopping offers."""
 import re
 import unicodedata
 from html import unescape
@@ -12,6 +12,43 @@ def normalized(value):
 
 def words(value):
     return re.sub(r'[\W_]+',' ',normalized(value)).strip()
+
+
+BFM_HOSTS={'bfmtv.com','bfmbusiness.com','bfmbusiness.fr','bfm.fr'}
+POLITICAL_SECTIONS={'politique','politiques','politics','political','geopolitique','geopolitics',
+    'election','elections','elections americaines','elections legislatives','us politics','uk politics',
+    'government','gouvernement','foreign policy','trade policy'}
+POLITICAL_TAG=re.compile(r'\b(?:politics|political|politiques?|geopolitiques?|geopolitics|elections?|government|gouvernement|parliament|parlement|brexit)\b')
+POLITICAL_TEXT=re.compile(r'\b(?:politiques?|politics|political|geopolitiques?|geopolitics|elections?|electoral|electorales?|scrutins?|referendums?|midterms?|votes?|brexit|gouvernements?|government|ministres?|ministeres?|ministers?|prime minister|premier ministre|maires?|deputes?|senateurs?|senators?|senat|senate|congress|congres|parlement|parliament|elysee|matignon|white house|maison blanche|house of commons|assemblee nationale|republicains?|democrates?|democrats?|republicans?|labour party|conservative party|rassemblement national|france insoumise|parti socialiste|partis? politiques?|campagne presidentielle|presidentielle|president de la republique|president americain|president francais|president chinois|trump|biden|macron|melenchon|bardella|retailleau|edouard philippe|gabriel attal|marine le pen|bayrou|barnier|starmer|sunak|poutine|putin|zelensky|zelenskyy|netanyahu|netanyahou|xi jinping|ursula von der leyen|orban|meloni|guerres?|wars?|invasion|geopolitical|diplomatie|diplomatic|sanctions|budget de l.etat|budget federal|loi de finances|reforme des retraites|plan de relance)\b')
+TECHNICAL_POLICY=re.compile(r'\bpolitiques? (?:de |des |d.)?(?:confidentialite|cookies|securite|moderation|retours?|prix|tarifaires?|mots de passe)\b')
+STATE_ESPIONAGE=re.compile(r'\b(?:(?:chinese|russian|iranian|foreign|soviet|state) (?:spy|spies|espionage)|espions? (?:chinois|russes?|iraniens?|etrangers?)|espionnes? (?:chinoises?|russes?|iraniennes?|etrangeres?))\b')
+
+
+def is_blocked_source(source):
+    names=' '.join(words(source.get(key)) for key in ['id','name','sourceId','sourceName','shortName'])
+    if re.search(r'\bbfm(?:tv|business)?\b',names):return True
+    hosts=list(source.get('allowedHosts') or [])
+    for key in ['url','home','feedUrl']:
+        try:hosts.append(urlsplit(source.get(key) or '').hostname or '')
+        except ValueError:continue
+    return any(host.lower().rstrip('.')==blocked or host.lower().rstrip('.').endswith('.'+blocked)
+               for host in hosts for blocked in BFM_HOSTS)
+
+
+def is_political(item):
+    try:
+        segments=[words(segment) for segment in unquote(urlsplit(item.get('url','')).path).split('/')]
+    except ValueError:segments=[]
+    if any(segment in POLITICAL_SECTIONS for segment in segments):return True
+    if any(POLITICAL_TAG.search(words(category)) for category in item.get('categories') or []):return True
+    # Mixed economy/technology stories are excluded too when their title or
+    # publisher excerpt covers politics. A company's privacy policy is technical.
+    text=TECHNICAL_POLICY.sub('',normalized(str(item.get('title') or '')+' '+str(item.get('summary') or '')))
+    return bool(POLITICAL_TEXT.search(text) or STATE_ESPIONAGE.search(text))
+
+
+def is_excluded(item):
+    return is_blocked_source(item) or is_political(item) or is_promotion(item)
 
 
 SECTIONS={'shopping','promos','promotions','offres','deals','offers','coupons','vouchers','discounts','best picks'}
