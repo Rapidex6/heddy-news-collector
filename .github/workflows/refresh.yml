@@ -1,11 +1,15 @@
 name: Refresh news
 on:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '2,17,32,47 * * * *'
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish the two JSON feeds to OVH (enable only after the complete website is live)'
+        description: 'Publish the two validated JSON feeds to OVH'
+        type: boolean
+        default: false
+      if_due:
+        description: 'Collect only when a public language feed needs refreshing'
         type: boolean
         default: false
       verify_sftp:
@@ -18,7 +22,24 @@ concurrency:
   group: news-refresh
   cancel-in-progress: false
 jobs:
+  freshness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      due: ${{ steps.check.outputs.due }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Check both public refresh timestamps
+        id: check
+        if: github.event_name == 'schedule' || (inputs.if_due && !inputs.verify_sftp)
+        run: python3 refresh_check.py due
   refresh:
+    needs: freshness
+    if: needs.freshness.outputs.due != 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -94,3 +115,6 @@ jobs:
           NEWS_SFTP_ROOT: ${{ vars.NEWS_SFTP_ROOT }}
           NEWS_SFTP_HOST_FINGERPRINT: ${{ vars.NEWS_SFTP_HOST_FINGERPRINT }}
           NEWS_SFTP_PASSWORD: ${{ secrets.NEWS_SFTP_PASSWORD }}
+      - name: Verify both public feeds against the collected bytes
+        if: vars.NEWS_PUBLISH_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.publish)
+        run: python refresh_check.py verify
