@@ -1,0 +1,92 @@
+name: Hourly news relay
+on:
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: 'Start a missing chain with an immediate public freshness check'
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ['Refresh news']
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+concurrency:
+  group: ${{ github.event_name == 'workflow_dispatch' && 'news-hourly-relay' || 'news-hourly-watchdog' }}
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    if: vars.NEWS_HOURLY_RELAY_ENABLED == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.event == 'schedule'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: news-relay-dispatch
+      cancel-in-progress: false
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - run: python3 news_relay.py seed-if-missing
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  wait:
+    if: vars.NEWS_HOURLY_RELAY_ENABLED == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && !inputs.bootstrap
+    environment: news-hourly
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - run: python3 news_relay.py check-wait
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  collect:
+    needs: wait
+    if: >-
+      always() && !cancelled() && vars.NEWS_HOURLY_RELAY_ENABLED == 'true' &&
+      github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+      (needs.wait.result == 'success' || (inputs.bootstrap && needs.wait.result == 'skipped'))
+    permissions:
+      contents: write
+    uses: ./.github/workflows/refresh.yml
+    with:
+      publish: true
+      if_due: true
+      timed_relay: true
+      verify_sftp: false
+    secrets:
+      NEWS_SFTP_PASSWORD: ${{ secrets.NEWS_SFTP_PASSWORD }}
+
+  successor:
+    needs: [wait, collect]
+    if: >-
+      always() && !cancelled() && vars.NEWS_HOURLY_RELAY_ENABLED == 'true' &&
+      github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+      (needs.wait.result == 'success' || (inputs.bootstrap && needs.wait.result == 'skipped')) &&
+      needs.collect.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: news-relay-dispatch
+      cancel-in-progress: false
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - run: python3 news_relay.py dispatch-next
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
