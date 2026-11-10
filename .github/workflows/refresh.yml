@@ -2,6 +2,23 @@ name: Refresh news
 on:
   schedule:
     - cron: '2,17,32,47 * * * *'
+  workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: false
+      if_due:
+        type: boolean
+        default: false
+      timed_relay:
+        type: boolean
+        default: false
+      verify_sftp:
+        type: boolean
+        default: false
+    secrets:
+      NEWS_SFTP_PASSWORD:
+        required: true
   workflow_dispatch:
     inputs:
       publish:
@@ -20,6 +37,7 @@ permissions:
   contents: write
 concurrency:
   group: news-refresh
+  queue: max
   cancel-in-progress: false
 jobs:
   freshness:
@@ -36,7 +54,9 @@ jobs:
       - name: Check both public refresh timestamps
         id: check
         if: github.event_name == 'schedule' || (inputs.if_due && !inputs.verify_sftp)
-        run: python3 refresh_check.py due
+        run: python3 refresh_check.py due --fresh-for-minutes "${FRESH_MINUTES}"
+        env:
+          FRESH_MINUTES: ${{ inputs.timed_relay && '5' || '45' }}
   refresh:
     needs: freshness
     if: needs.freshness.outputs.due != 'false'
