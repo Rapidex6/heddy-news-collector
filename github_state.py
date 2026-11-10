@@ -1,6 +1,5 @@
 """Durable bounded collection history on the dedicated news-state Git branch."""
 import argparse
-import base64
 import json
 import os
 import urllib.error
@@ -8,15 +7,22 @@ import urllib.request
 from pathlib import Path
 
 BRANCH = "news-state"
+MAX_STATE_BYTES = 5_000_000
 
 
-def api(path, payload=None, method=None):
+def api(path, payload=None, method=None, *, raw=False):
     repository = os.environ["GITHUB_REPOSITORY"]
     request = urllib.request.Request("https://api.github.com/repos/" + repository + "/" + path,
         data=json.dumps(payload).encode() if payload is not None else None,
-        headers={"Authorization": "Bearer " + os.environ["GITHUB_TOKEN"], "Accept": "application/vnd.github+json",
+        headers={"Authorization": "Bearer " + os.environ["GITHUB_TOKEN"],
+                 "Accept": "application/vnd.github.raw+json" if raw else "application/vnd.github+json",
                  "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "HeddyNewsCollector"}, method=method)
     with urllib.request.urlopen(request, timeout=30) as response:
+        if raw:
+            value = response.read(MAX_STATE_BYTES + 1)
+            if len(value) > MAX_STATE_BYTES:
+                raise ValueError("State exceeds limit")
+            return value
         return json.load(response)
 
 
@@ -37,10 +43,8 @@ def pull():
         return
     for language in ["fr", "en"]:
         try:
-            entry = api(f"contents/state/{language}.json?ref={BRANCH}")
-            if entry["size"] > 5_000_000:
-                raise ValueError("State exceeds limit")
-            value = base64.b64decode(entry["content"])
+            # Contents responses omit inline base64 for files over 1 MB.
+            value = api(f"contents/state/{language}.json?ref={reference}", raw=True)
             data = json.loads(value)
             if data["schemaVersion"] != 1 or data["language"] != language:
                 raise ValueError("Invalid stored history")
@@ -57,6 +61,8 @@ def push():
     for language in ["fr", "en"]:
         path = Path(f".state/{language}.json")
         if path.exists():
+            if path.stat().st_size > MAX_STATE_BYTES:
+                raise ValueError("State exceeds limit")
             value = json.loads(path.read_text(encoding="utf-8"))
             if value["language"] != language:
                 raise ValueError("Wrong state language")

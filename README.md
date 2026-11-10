@@ -84,15 +84,23 @@ HTML lookups. No linked arXiv page or PDF is requested.
 The news-state Git branch stores separate state/fr.json and state/en.json.
 This is durable history, not an expiring Actions cache. Updates are non-forced.
 
-The workflow runs hourly at minute 17 UTC and supports manual runs. Scheduled
-workflows may be delayed, or disabled after 60 inactive days.
+GitHub checks both live HTTP feeds at minutes 02, 17, 32 and 47 UTC. A new
+collection is due when either language is at least 45 minutes old or its latest
+successful refresh cannot be established. A manual run can force collection or
+use the same freshness check with `if_due`. GitHub can delay or drop scheduled
+events and may disable them after 60 inactive days.
 NEWS_PUBLISH_ENABLED must be true before publication. Configure repository
 variables NEWS_SFTP_HOST, NEWS_SFTP_PORT, NEWS_SFTP_USER, NEWS_SFTP_ROOT and the
 pinned SHA256 NEWS_SFTP_HOST_FINGERPRINT. The existing SFTP password belongs only
 in Actions secret NEWS_SFTP_PASSWORD.
 
 Only the two fixed JSON filenames are sent. Each upload is verified by hash and
-published with a temporary sibling plus atomic POSIX rename. Failed renames
+published with a temporary sibling plus atomic POSIX rename. The publishing
+job re-reads both ordinary public HTTPS URLs and checks their bytes against
+the validated local files. Each feed and history records `lastAttemptAt`. If
+every source in a language fails, the last useful selection and its successful
+refresh timestamp stay in place, and the publication verification reports a failure.
+Failed renames
 preserve the previous file. Website deployments preserve existing runtime feeds.
 Deploy a compatible frontend before publishing an expanded source selection.
 The full site must remain below 100,000,000 bytes.

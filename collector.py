@@ -314,6 +314,7 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
                 if is_excluded(item):history.pop(item['id'],None)
                 else:history[item["id"]] = item
             current = {**prior, **headers, "lastSuccessAt": stamp(now)}
+            current.pop("lastError", None)
             status, successes = "ok", successes + 1
         except (OSError, ValueError, ET.ParseError, urllib.error.URLError, socket.timeout) as error:
             current = dict(prior)
@@ -348,8 +349,10 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
             if round_index<len(bucket) and len(selected)<MAX_ITEMS:selected.append(bucket[round_index])
     rank={item['id']:index for index,item in enumerate(ordered)}
     selected.sort(key=lambda item:rank[item['id']])
-    refreshed = stamp(now) if successes else previous.get("lastSuccessfulRefreshAt")
-    feed = {"schemaVersion": 1, "language": language, "timeZone": "Europe/Paris", "generatedAt": stamp(now),
+    attempted = stamp(now)
+    refreshed = attempted if successes else previous.get("lastSuccessfulRefreshAt")
+    feed = {"schemaVersion": 1, "language": language, "timeZone": "Europe/Paris", "generatedAt": attempted,
+            "lastAttemptAt": attempted,
             "lastSuccessfulRefreshAt": refreshed, "sources": statuses, "items": selected}
     if not successes and previous.get("feed"):
         # Preserve useful prior data during an outage while applying current
@@ -357,13 +360,11 @@ def collect_language(sources, language, previous, now, fetch=fetch_feed):
         feed = previous["feed"]
         clean=[item for item in feed['items'] if item['sourceId'] in active_ids
                and item.get('language')==language and not is_excluded(item)]
-        clean_sources=[source for source in feed['sources'] if source['id'] in active_ids and not is_blocked_source(source)]
-        if len(clean)!=len(feed['items']) or len(clean_sources)!=len(feed['sources']):
-            feed={**feed,'items':clean,'sources':clean_sources}
+        feed = {**feed, "lastAttemptAt": attempted, "sources": statuses, "items": clean}
     while len(compact_json(feed)) > FEED_BUDGET and feed["items"]:
         feed["items"].pop()
     validate_feed(feed, language)
-    state = {"schemaVersion": 1, "parserVersion":PARSER_VERSION, "language": language, "lastSuccessfulRefreshAt": refreshed,
+    state = {"schemaVersion": 1, "parserVersion":PARSER_VERSION, "language": language, "lastAttemptAt": attempted, "lastSuccessfulRefreshAt": refreshed,
              "sourceState": states, "history": retained, "feed": feed,
              "mediaState": previous.get('mediaState',{})}
     return state

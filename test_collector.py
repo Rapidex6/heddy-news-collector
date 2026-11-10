@@ -4,11 +4,14 @@ import json
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from collector import (PARIS, canonical_url, collect_language, in_window, parse_date,
                        parse_feed, plain, stamp, validate_feed)
 from sftp_publish import atomic_upload
+from refresh_check import refresh_due, verify_public
+import github_state
 
 NOW = datetime(2026, 11, 8, 12, tzinfo=timezone.utc)
 REGISTRY = json.loads(Path(__file__).with_name('sources.json').read_text(encoding='utf-8'))['sources']
@@ -107,14 +110,25 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(len(third['feed']['items']), 1)
         self.assertEqual(third['feed']['sources'][0]['status'], 'ok')
 
-    def test_complete_outage_preserves_last_public_file(self):
+    def test_complete_outage_keeps_articles_and_reports_current_attempt(self):
         first = self.initial()
         def failed(s, p):
             raise OSError('unavailable')
-        second = collect_language([source()], 'fr', first, NOW+timedelta(hours=1), failed)
-        self.assertEqual(second['feed'], first['feed'])
+        both_sources = [source(), source('cnil')]
+        second = collect_language(both_sources, 'fr', first, NOW+timedelta(hours=1), failed)
+        self.assertEqual(second['feed']['items'], first['feed']['items'])
+        self.assertEqual(second['feed']['generatedAt'], first['feed']['generatedAt'])
+        self.assertEqual(second['feed']['lastSuccessfulRefreshAt'], first['feed']['lastSuccessfulRefreshAt'])
+        self.assertEqual(second['feed']['lastAttemptAt'], stamp(NOW+timedelta(hours=1)))
+        self.assertEqual(second['lastAttemptAt'], second['feed']['lastAttemptAt'])
         self.assertEqual(second['lastSuccessfulRefreshAt'], first['lastSuccessfulRefreshAt'])
         self.assertEqual(second['sourceState']['insee']['lastError'], 'OSError')
+        self.assertEqual([s['status'] for s in second['feed']['sources']], ['stale', 'unavailable'])
+        self.assertEqual(second['feed']['sources'][0]['lastSuccessAt'], stamp(NOW))
+        self.assertEqual(first['feed']['sources'][0]['status'], 'ok')
+        recovered = collect_language(both_sources, 'fr', second, NOW+timedelta(hours=2), lambda s, p: (rss(), {}))
+        self.assertTrue(all(s['status'] == 'ok' for s in recovered['feed']['sources']))
+        self.assertNotIn('lastError', recovered['sourceState']['insee'])
 
     def promotion_in_history(self):
         previous=self.initial()
@@ -262,6 +276,54 @@ class TransferTests(unittest.TestCase):
         with self.assertRaises(IOError):
             atomic_upload(remote, '/www/news-feed.fr.json', b'new-valid')
         self.assertEqual(remote.files, {'/www/news-feed.fr.json': b'last-valid'})
+
+
+class PublicRefreshTests(unittest.TestCase):
+    def test_raw_history_restore_supports_over_one_megabyte_and_caps_bytes(self):
+        request_env = {'GITHUB_REPOSITORY': 'owner/example', 'GITHUB_TOKEN': 'unit-test'}
+        with patch.dict('os.environ', request_env), patch('github_state.urllib.request.urlopen') as fetch:
+            history = b' ' * 1_100_000 + b'{}'
+            fetch.return_value = io.BytesIO(history)
+            self.assertEqual(github_state.api('contents/state/fr.json?ref=abc', raw=True), history)
+            self.assertEqual(fetch.call_args.args[0].get_header('Accept'), 'application/vnd.github.raw+json')
+            fetch.return_value = io.BytesIO(b' ' * (github_state.MAX_STATE_BYTES + 1))
+            with self.assertRaisesRegex(ValueError, 'State exceeds limit'):
+                github_state.api('contents/state/fr.json?ref=abc', raw=True)
+
+    def payload(self, language, age=timedelta(0)):
+        success = stamp(NOW - age)
+        return json.dumps(dict(schemaVersion=1, language=language, lastAttemptAt=success,
+                               lastSuccessfulRefreshAt=success)).encode()
+
+    def test_poll_uses_oldest_language_and_successful_refresh(self):
+        self.assertFalse(refresh_due(NOW, lambda lang: self.payload(lang, timedelta(minutes=44, seconds=59))))
+        for old in ('fr', 'en'):
+            def read(lang):
+                data = json.loads(self.payload(lang, timedelta(minutes=45 if lang == old else 5)))
+                data['lastAttemptAt'] = stamp(NOW)
+                return json.dumps(data).encode()
+            self.assertTrue(refresh_due(NOW, read))
+
+    def test_unavailable_invalid_or_future_publication_triggers_collection(self):
+        for result in (b'{}', b'<html>', self.payload('fr', timedelta(minutes=-2)), self.payload('en')):
+            self.assertTrue(refresh_due(NOW, lambda lang: result if lang == 'fr' else self.payload(lang)))
+        def unavailable(lang):
+            raise OSError('public endpoint temporarily unavailable')
+        self.assertTrue(refresh_due(NOW, unavailable))
+
+    def test_public_verification_requires_matching_bytes_and_success_this_attempt(self):
+        with TemporaryDirectory() as directory:
+            output = Path(directory)
+            for lang in ('fr', 'en'):
+                (output / f'news-feed.{lang}.json').write_bytes(self.payload(lang))
+            verify_public(output, self.payload)
+            with self.assertRaisesRegex(ValueError, 'public bytes differ'):
+                verify_public(output, lambda lang: self.payload(lang, timedelta(hours=1)), lambda delay: None)
+            feed = json.loads(self.payload('en', timedelta(hours=1)))
+            feed['lastAttemptAt'] = stamp(NOW)
+            (output / 'news-feed.en.json').write_bytes(json.dumps(feed).encode())
+            with self.assertRaisesRegex(ValueError, 'no successful source'):
+                verify_public(output, self.payload)
 
 
 if __name__ == '__main__':
