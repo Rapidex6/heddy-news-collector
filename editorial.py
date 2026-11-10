@@ -53,7 +53,7 @@ def is_excluded(item):
 
 SECTIONS={'shopping','promos','promotions','offres','deals','offers','coupons','vouchers','discounts','best picks'}
 CATEGORIES=SECTIONS|{'bon plan','bons plans','bonne affaire','bonnes affaires','code promo','codes promo',
-    'guide d achat','guides d achat','guide achat','guides achat','buying guide','buying guides',
+    'guide d achat','guides d achat','guide achat','guides achat','buying guide','buying guides','top produit','top produits',
     'sponsored','sponsored content','advertorial','contenu sponsorise','article sponsorise','partenariat commercial'}
 PRICE=re.compile(r'[$€£]\s*\d|\b\d[\d\s.,]{0,18}\s*(?:[$€£]|\b(?:euros?|eur|usd|dollars?|gbp|pounds?)\b)')
 DISCOUNT=re.compile(r'-\s*\d{1,3}\s*%|\b\d{1,3}\s*%\s*(?:off\b|de\s+(?:remise|reduction))')
@@ -72,6 +72,8 @@ def is_promotion(item):
     except ValueError:
         segments=[]
     for segment in segments:
+        if item.get('sourceId') == 'lesnumeriques' and re.match(r'^top produits?(?: |$)', segment):
+            return True
         if segment in SECTIONS or re.match(r'^(?:bons? plans?|codes? promo|guides? d ?achat|buying guides?)(?: |$)',segment):
             return True
     for category in item.get('categories') or []:
@@ -79,6 +81,8 @@ def is_promotion(item):
         if category in CATEGORIES or re.match(r'^(?:bons? plans?|codes? promo|guides? d achat|buying guides?)(?: |$)',category):
             return True
     title=normalized(item.get('title'))
+    if re.match(r'^(?:actualite\s*:\s*)?top produits?\s*[:–—-]', title):
+        return True
     # News about retail, earnings, fraud or shopping events is still news.
     if EDITORIAL.search(title):return False
     if DIRECT_OFFER.search(title):return True

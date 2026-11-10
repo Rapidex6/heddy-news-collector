@@ -28,7 +28,7 @@ def read_public(language):
     return data
 
 
-def refresh_due(now, read=read_public):
+def refresh_due(now, read=read_public, fresh_for=REFRESH_AFTER):
     due = False
     for language in LANGUAGES:
         try:
@@ -38,7 +38,7 @@ def refresh_due(now, read=read_public):
             last = datetime.fromisoformat(feed["lastSuccessfulRefreshAt"].replace("Z", "+00:00"))
             age = now - last
             print(f"{language}: last successful refresh {last.isoformat()}")
-            if age < timedelta(0) or age >= REFRESH_AFTER:
+            if age < timedelta(0) or age >= fresh_for:
                 due = True
         except (HTTPException, OSError, ValueError, TypeError, KeyError, AttributeError) as error:
             print(f"{language}: public freshness unavailable ({type(error).__name__})")
@@ -68,9 +68,10 @@ def verify_public(output, read=read_public, sleep=time.sleep):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["due", "verify"])
+    parser.add_argument("--fresh-for-minutes", type=int, choices=[5, 45], default=45)
     args = parser.parse_args()
     if args.action == "due":
-        due = refresh_due(datetime.now(timezone.utc))
+        due = refresh_due(datetime.now(timezone.utc), fresh_for=timedelta(minutes=args.fresh_for_minutes))
         print(f"Refresh due: {due}")
         if os.environ.get("GITHUB_OUTPUT"):
             with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:

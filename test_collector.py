@@ -11,6 +11,7 @@ from collector import (PARIS, canonical_url, collect_language, in_window, parse_
                        parse_feed, plain, stamp, validate_feed)
 from sftp_publish import atomic_upload
 from refresh_check import refresh_due, verify_public
+from editorial import is_promotion
 import github_state
 
 NOW = datetime(2026, 11, 8, 12, tzinfo=timezone.utc)
@@ -149,6 +150,28 @@ class CollectorTests(unittest.TestCase):
         current=collect_language([source()],'fr',previous,NOW+timedelta(hours=1),failed)
         self.assertEqual(len(current['feed']['items']),1)
         self.assertEqual(current['lastSuccessfulRefreshAt'],previous['lastSuccessfulRefreshAt'])
+
+    def test_top_produit_offers_are_removed_even_from_unchanged_or_outage_history(self):
+        publisher = source('lesnumeriques')
+        offer = {**self.initial()['history'][0], 'sourceId': publisher['id'], 'categories': [],
+                 'url': 'https://www.lesnumeriques.com/montre-connectee/top-produit-la-montre-connectee-garmin-fenix-8-a-575-00-n267103.html',
+                 'title': 'Actualité : Top produit – La montre connectée Garmin Fenix 8 à 575,00 €'}
+        launch = {**offer, 'id': 'lesnumeriques:release', 'title': 'Garmin annonce une nouvelle montre à 575 euros',
+                  'url': 'https://www.lesnumeriques.com/montre-connectee/garmin-presente-sa-montre.html'}
+        self.assertTrue(is_promotion({**offer, 'title': 'La montre Garmin à 575 €'}))
+        self.assertTrue(is_promotion({**launch, 'title': 'Top produit : une montre connectée'}))
+        self.assertFalse(is_promotion(launch))
+        previous = collect_language([publisher], 'fr', {}, NOW, lambda s,p: (rss(), {}))
+        previous['history'] = [offer, launch]
+        previous['feed']['items'] = [offer, launch]
+        def down(s, p):
+            raise OSError('unavailable')
+        for fetch in [lambda s,p: (None, {}), down]:
+            result = collect_language([publisher], 'fr', previous, NOW+timedelta(hours=1), fetch)
+            self.assertEqual([i['id'] for i in result['history']], [launch['id']])
+            self.assertEqual([i['id'] for i in result['feed']['items']], [launch['id']])
+        with self.assertRaisesRegex(ValueError, 'Excluded editorial'):
+            validate_feed(previous['feed'], 'fr')
 
     def test_new_commercial_category_removes_the_old_cached_item(self):
         previous=self.initial()
@@ -303,6 +326,11 @@ class PublicRefreshTests(unittest.TestCase):
                 data['lastAttemptAt'] = stamp(NOW)
                 return json.dumps(data).encode()
             self.assertTrue(refresh_due(NOW, read))
+
+    def test_timed_relay_can_skip_only_a_very_recent_publication(self):
+        limit = timedelta(minutes=5)
+        self.assertFalse(refresh_due(NOW, lambda lang: self.payload(lang, limit-timedelta(seconds=1)), limit))
+        self.assertTrue(refresh_due(NOW, lambda lang: self.payload(lang, limit), limit))
 
     def test_unavailable_invalid_or_future_publication_triggers_collection(self):
         for result in (b'{}', b'<html>', self.payload('fr', timedelta(minutes=-2)), self.payload('en')):

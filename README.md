@@ -89,6 +89,23 @@ collection is due when either language is at least 45 minutes old or its latest
 successful refresh cannot be established. A manual run can force collection or
 use the same freshness check with `if_due`. GitHub can delay or drop scheduled
 events and may disable them after 60 inactive days.
+The hourly news relay uses GitHub's deployment environment wait timer as a
+second trigger. On this public repository, create the environment `news-hourly`
+on the default branch with a 50-minute wait timer and no required reviewers.
+Set the repository Actions variable `NEWS_HOURLY_RELAY_ENABLED` to `true`.
+Run `Hourly news relay` on `main` once with `bootstrap` selected to check
+the live feeds immediately. Every successor has `bootstrap=false` and waits
+without a runner. After that wait it checks the GitHub run's creation time,
+then invokes the same serialized collector and publisher. A timed check,
+including the bootstrap, skips collection only when both public feeds are
+under five minutes old. This leaves time for the next 50-minute wait and
+runner startup before the hourly target. A failed collection still schedules
+one timed successor.
+After native scheduled checks, a watchdog restarts a missing chain with an
+immediate freshness check using the same five-minute threshold. Set the
+variable to `false` to stop the relay. A run queued before that change may
+complete, and subsequent runs skip their jobs. The relay uses job-scoped
+GitHub tokens and the existing SFTP configuration.
 NEWS_PUBLISH_ENABLED must be true before publication. Configure repository
 variables NEWS_SFTP_HOST, NEWS_SFTP_PORT, NEWS_SFTP_USER, NEWS_SFTP_ROOT and the
 pinned SHA256 NEWS_SFTP_HOST_FINGERPRINT. The existing SFTP password belongs only
